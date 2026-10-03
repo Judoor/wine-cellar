@@ -78,7 +78,9 @@ export const racks = sqliteTable(
       .references(() => locations.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     rows: integer("rows").notNull(),
+    // For "pyramid": cols = bottles on the bottom row, each row above holds one less.
     cols: integer("cols").notNull(),
+    layout: text("layout", { enum: ["grid", "pyramid"] }).notNull().default("grid"),
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (t) => [index("racks_location_idx").on(t.locationId)],

@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
+import { slotExists } from "@/lib/slots";
 
 const { locations, racks, bottles, wines } = schema;
 
@@ -15,11 +16,15 @@ export const locationInputSchema = z.object({
     .nullish(),
 });
 
-export const rackInputSchema = z.object({
-  name: z.string().trim().min(1, "cellar.nameRequired").max(80),
-  rows: z.coerce.number().int().min(1).max(50),
-  cols: z.coerce.number().int().min(1).max(50),
-});
+export const rackInputSchema = z
+  .object({
+    name: z.string().trim().min(1, "cellar.nameRequired").max(80),
+    rows: z.coerce.number().int().min(1).max(50),
+    cols: z.coerce.number().int().min(1).max(50),
+    layout: z.enum(["grid", "pyramid"]).default("grid"),
+  })
+  // A pyramid can't be taller than its base is wide.
+  .refine((r) => r.layout === "grid" || r.rows <= r.cols, { message: "cellar.pyramidTooTall", path: ["rows"] });
 
 /* ---------- Locations ---------- */
 
@@ -31,7 +36,9 @@ export function listLocations(userId: string) {
       name: locations.name,
       description: locations.description,
       racks: count(racks.id),
-      capacity: sql<number>`coalesce(sum(${racks.rows} * ${racks.cols}), 0)`,
+      capacity: sql<number>`coalesce(sum(case when ${racks.layout} = 'pyramid'
+        then ${racks.rows} * ${racks.cols} - ${racks.rows} * (${racks.rows} - 1) / 2
+        else ${racks.rows} * ${racks.cols} end), 0)`,
     })
     .from(locations)
     .leftJoin(racks, eq(racks.locationId, locations.id))
@@ -139,12 +146,8 @@ export function createRack(userId: string, locationId: string, input: z.infer<ty
 export function updateRack(userId: string, rackId: string, input: z.infer<typeof rackInputSchema>) {
   if (!ownedRack(userId, rackId)) return { ok: false as const, error: "notFound" as const };
   const db = getDb();
-  const outside = db
-    .select({ n: count() })
-    .from(bottles)
-    .where(and(eq(bottles.rackId, rackId), sql`(${bottles.row} >= ${input.rows} or ${bottles.col} >= ${input.cols})`))
-    .get()?.n;
-  if (outside) return { ok: false as const, error: "bottlesOutside" as const };
+  const placed = db.select({ row: bottles.row, col: bottles.col }).from(bottles).where(eq(bottles.rackId, rackId)).all();
+  if (placed.some((b) => !slotExists(input, b.row!, b.col!))) return { ok: false as const, error: "bottlesOutside" as const };
   db.update(racks).set(input).where(eq(racks.id, rackId)).run();
   return { ok: true as const };
 }
@@ -195,9 +198,7 @@ export type Target = { rackId: string; row: number; col: number };
  */
 export function placeBottle(userId: string, source: { bottleId: string } | { wineId: string }, target: Target) {
   const rack = ownedRack(userId, target.rackId);
-  if (!rack || target.row < 0 || target.col < 0 || target.row >= rack.rows || target.col >= rack.cols) {
-    return { ok: false as const };
-  }
+  if (!rack || !slotExists(rack, target.row, target.col)) return { ok: false as const };
   const db = getDb();
   return db.transaction((tx) => {
     let bottle;

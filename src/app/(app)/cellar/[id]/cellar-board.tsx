@@ -19,7 +19,7 @@ import { useOptimistic, useState, useTransition } from "react";
 import { Button, Card } from "@/components/ui";
 import type { Rack, WineColor } from "@/lib/db/schema";
 import type { PlacedBottle } from "@/lib/services/cellar";
-import { rowLabel, slotLabel } from "@/lib/slots";
+import { rowLabel, rowWidth, slotLabel } from "@/lib/slots";
 import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { useI18n } from "@/i18n/client";
 import { drinkBottle, place, unplace } from "../actions";
@@ -129,7 +129,8 @@ export function CellarBoard({
   const selectedId = mode.kind === "selected" || mode.kind === "moving" ? mode.bottle.id : null;
 
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
+    // A fixed id keeps dnd-kit's generated aria ids identical on server and client (hydration).
+    <DndContext id="cellar-board" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setDragging(null)}>
       {(mode.kind === "placing" || mode.kind === "moving") && (
         <div className="oak sticky top-16 z-20 mb-4 flex items-center gap-3 rounded-md px-4 py-3 text-sm shadow-lg md:top-4">
           <span className="min-w-0 flex-1">
@@ -231,6 +232,35 @@ function RackGrid({
   onSlotClick: (t: Target) => void;
 }) {
   const at = new Map(bottles.map((b) => [`${b.row}:${b.col}`, b]));
+
+  if (rack.layout === "pyramid") {
+    // Rows are centered, so each one sits in the gaps of the row below.
+    return (
+      <div className="-mx-1 overflow-x-auto px-1 pb-1">
+        <div className="oak inline-flex flex-col gap-0.5 rounded-md p-2 sm:p-3">
+          {Array.from({ length: rack.rows }, (_, r) => (
+            <div key={r} className="flex items-center gap-1 sm:gap-1.5">
+              <span className="w-5 shrink-0 text-center text-[10px] font-semibold opacity-60">{rowLabel(r)}</span>
+              <div className="flex flex-1 justify-center gap-1 sm:gap-1.5">
+                {Array.from({ length: rowWidth(rack, r) }, (_, c) => (
+                  <Slot
+                    key={c}
+                    target={{ rackId: rack.id, row: r, col: c }}
+                    bottle={at.get(`${r}:${c}`)}
+                    selected={at.get(`${r}:${c}`)?.id === selectedId}
+                    highlightEmpty={highlightEmpty}
+                    onClick={onSlotClick}
+                    className="w-9 sm:w-11"
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="-mx-1 overflow-x-auto px-1 pb-1">
       <div
@@ -289,12 +319,14 @@ function Slot({
   selected,
   highlightEmpty,
   onClick,
+  className,
 }: {
   target: Target;
   bottle?: PlacedBottle;
   selected: boolean;
   highlightEmpty: boolean;
   onClick: (t: Target) => void;
+  className?: string;
 }) {
   const { t } = useI18n();
   const { setNodeRef, isOver } = useDroppable({ id: `slot:${target.rackId}:${target.row}:${target.col}`, data: target });
@@ -310,6 +342,7 @@ function Slot({
         "relative flex aspect-square items-center justify-center rounded-full bg-[#1d130c] shadow-[inset_0_3px_6px_rgb(0_0_0/0.6)] transition",
         isOver && "ring-2 ring-[#f0b860]",
         !bottle && highlightEmpty && "bg-[#2c1d12] ring-1 ring-[#f0b860]/40",
+        className,
       )}
     >
       {bottle && <PlacedBottleDot bottle={bottle} selected={selected} />}

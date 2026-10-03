@@ -1,0 +1,1 @@
+ALTER TABLE `racks` ADD `layout` text DEFAULT 'grid' NOT NULL;

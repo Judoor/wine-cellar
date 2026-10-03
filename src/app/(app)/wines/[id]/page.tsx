@@ -6,7 +6,9 @@ import { WindowBadge } from "@/components/window-badge";
 import { requireUser } from "@/lib/auth";
 import { windowStatus } from "@/lib/drinking-window";
 import { formatMoney } from "@/lib/format";
+import { wineLocations } from "@/lib/services/cellar";
 import { getWine } from "@/lib/services/wines";
+import { slotLabel } from "@/lib/slots";
 import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { getLocale, getT } from "@/i18n/server";
 import { DeleteWineButton, StockControls } from "./stock-controls";
@@ -19,6 +21,7 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
   if (!wine) notFound();
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const status = windowStatus(wine);
+  const places = wineLocations(user.id, wine.id);
   const money = (n: number | null) => (n == null ? null : formatMoney(n, user.currency, locale));
 
   const details: [string, React.ReactNode][] = [
@@ -53,6 +56,24 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
             )}
           </Card>
           <StockControls wineId={wine.id} stock={wine.stock} />
+          {wine.stock > 0 && (
+            <Card>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">{t("cellar.whereTitle")}</p>
+              <ul className="space-y-1.5 text-sm">
+                {groupByRack(places).map((g) => (
+                  <li key={g.key}>
+                    <Link href={`/cellar/${g.locationId}`} className="hover:text-primary">
+                      <span className="font-semibold">{g.location}</span> › {g.rack}
+                    </Link>
+                    <span className="ml-1 text-muted">{g.slots.join(", ")}</span>
+                  </li>
+                ))}
+                {wine.stock > places.length && (
+                  <li className="text-muted">{t("cellar.notPlaced", { count: wine.stock - places.length })}</li>
+                )}
+              </ul>
+            </Card>
+          )}
         </div>
 
         <div className="min-w-0 space-y-5">
@@ -126,4 +147,14 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
       </div>
     </>
   );
+}
+
+function groupByRack(places: ReturnType<typeof wineLocations>) {
+  const groups = new Map<string, { key: string; locationId: string; location: string; rack: string; slots: string[] }>();
+  for (const p of places) {
+    const key = `${p.locationId}:${p.rack}`;
+    if (!groups.has(key)) groups.set(key, { key, locationId: p.locationId, location: p.location, rack: p.rack, slots: [] });
+    groups.get(key)!.slots.push(slotLabel(p.row!, p.col!));
+  }
+  return [...groups.values()];
 }

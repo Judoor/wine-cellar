@@ -5,6 +5,7 @@ import { Camera, Minus, Plus, Wand2, X } from "lucide-react";
 import { startTransition, useActionState, useRef, useState } from "react";
 import { Alert, Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { estimateWindow } from "@/lib/aging";
+import { formatBottleSize } from "@/lib/format";
 import { resizeImage } from "@/lib/resize-image";
 import type { Wine, WineColor } from "@/lib/db/schema";
 import { PAIRING_KEYS } from "@/lib/pairings";
@@ -79,6 +80,8 @@ export function WineForm({
 
   // Pending resize, awaited on submit so a quick "Save" never drops the photo.
   const resizing = useRef<Promise<Blob> | null>(null);
+  // Locks "Save" while a photo is being prepared (prevents double submissions).
+  const [waitingPhoto, setWaitingPhoto] = useState(false);
 
   async function onPhoto(file: File | undefined) {
     if (!file) return;
@@ -94,9 +97,12 @@ export function WineForm({
     const pendingPhoto = resizing.current;
     if (removePhoto) formData.set("removePhoto", "1");
     if (!pendingPhoto || removePhoto) return formAction(formData);
+    if (waitingPhoto) return;
+    setWaitingPhoto(true);
     return pendingPhoto.then((blob) => {
       formData.set("photo", photo ?? blob, "label.jpg");
       startTransition(() => formAction(formData));
+      setWaitingPhoto(false);
     });
   }
 
@@ -240,7 +246,7 @@ export function WineForm({
               <Select id="bottleSizeMl" name="bottleSizeMl" defaultValue={wine?.bottleSizeMl ?? 750}>
                 {BOTTLE_SIZES.map((ml) => (
                   <option key={ml} value={ml}>
-                    {ml >= 1000 ? `${ml / 1000} L` : `${ml / 10} cl`}
+                    {formatBottleSize(ml, locale)}
                   </option>
                 ))}
               </Select>
@@ -320,7 +326,7 @@ export function WineForm({
         {state?.error && <Alert>{t(state.error)}</Alert>}
 
         <div className="sticky bottom-24 z-10 flex gap-3 md:static">
-          <Button type="submit" disabled={pending} className="flex-1 shadow-lg md:flex-none md:shadow-sm">
+          <Button type="submit" disabled={pending || waitingPhoto} className="flex-1 shadow-lg md:flex-none md:shadow-sm">
             {t("common.save")}
           </Button>
           <Button type="button" variant="secondary" onClick={() => window.history.back()}>

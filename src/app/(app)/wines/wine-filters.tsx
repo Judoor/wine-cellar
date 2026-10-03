@@ -59,7 +59,7 @@ export function WineFilters({ regions }: { regions: string[] }) {
 
       {/* Stock status: segmented control */}
       <div className="flex rounded border border-border bg-surface p-1 text-sm">
-        {(["stock", "finished", "all"] as const).map((s) => (
+        {(["stock", "tasted", "all"] as const).map((s) => (
           <button
             key={s}
             type="button"
@@ -67,7 +67,7 @@ export function WineFilters({ regions }: { regions: string[] }) {
             onClick={() => update("status", s === "stock" ? "" : s)}
             className={cn("flex-1 rounded px-2 py-1.5 font-medium", status === s ? "bg-oak text-oak-foreground" : "text-muted hover:text-foreground")}
           >
-            {t(s === "stock" ? "wines.statusStock" : s === "finished" ? "wines.statusFinished" : "wines.statusAll")}
+            {t(s === "stock" ? "wines.statusStock" : s === "tasted" ? "wines.statusTasted" : "wines.statusAll")}
           </button>
         ))}
       </div>

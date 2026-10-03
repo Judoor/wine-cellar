@@ -188,6 +188,8 @@ function WishlistForm({
 
   // Pending resize, awaited on submit so a quick "Save" never drops the photo.
   const resizing = useRef<Promise<Blob> | null>(null);
+  // Locks "Save" while a photo is being prepared (prevents double submissions).
+  const [waitingPhoto, setWaitingPhoto] = useState(false);
 
   async function onPhoto(file: File | undefined) {
     if (!file) return;
@@ -203,9 +205,12 @@ function WishlistForm({
     const pendingPhoto = resizing.current;
     if (removePhoto) fd.set("removePhoto", "1");
     if (!pendingPhoto) return action(fd);
+    if (waitingPhoto) return;
+    setWaitingPhoto(true);
     return pendingPhoto.then((blob) => {
       fd.set("photo", photo ?? blob, "label.jpg");
       startTransition(() => action(fd));
+      setWaitingPhoto(false);
     });
   }
 
@@ -301,7 +306,7 @@ function WishlistForm({
         )}
         {state?.error && <Alert>{t(state.error)}</Alert>}
         <div className="flex gap-2">
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending || waitingPhoto}>
             {t("common.save")}
           </Button>
           <Button type="button" variant="ghost" onClick={onDone}>

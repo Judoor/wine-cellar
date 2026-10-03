@@ -7,16 +7,17 @@ import { requireUser } from "@/lib/auth";
 import { windowStatus } from "@/lib/drinking-window";
 import { listRegions, listWines, type WineListFilters } from "@/lib/services/wines";
 import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
-import { getT } from "@/i18n/server";
+import { getLocale, getT } from "@/i18n/server";
+import { formatBottleSize } from "@/lib/format";
 import { WineFilters } from "./wine-filters";
 
 const SORTS = ["recent", "producer", "vintage", "window", "rating"] as const;
-const STATUSES = ["stock", "finished", "all"] as const;
+const STATUSES = ["stock", "tasted", "all"] as const;
 const WINDOWS = ["peak", "ready", "declining", "past", "tooYoung", "unknown"] as const;
 
 export default async function WinesPage(props: PageProps<"/wines">) {
   const user = await requireUser();
-  const t = await getT();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const sp = await props.searchParams;
   const str = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
 
@@ -74,7 +75,9 @@ export default async function WinesPage(props: PageProps<"/wines">) {
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <p className="truncate font-semibold">{w.producer}</p>
-                    <p className="truncate text-sm text-muted">{[w.name, w.vintage ?? t("wines.nonVintage")].filter(Boolean).join(" · ")}</p>
+                    <p className="truncate text-sm text-muted">
+                      {[w.name, w.vintage ?? t("wines.nonVintage")].filter(Boolean).join(" · ")}
+                    </p>
                     <p className="truncate text-xs uppercase tracking-wider text-muted">{w.appellation ?? w.region}</p>
                     {w.rating != null && (
                       <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
@@ -83,8 +86,11 @@ export default async function WinesPage(props: PageProps<"/wines">) {
                     )}
                     <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                       <WindowBadge status={status} label={t(`window.${status}`)} />
-                      <span className={w.stock > 0 ? "font-serif text-lg" : "text-xs text-muted"}>
-                        {w.stock > 0 ? t("wines.bottlesCount", { count: w.stock }) : t("wines.finished")}
+                      <span className="flex shrink-0 items-baseline gap-1.5">
+                        <span className="text-xs text-muted">{formatBottleSize(w.bottleSizeMl, locale)}</span>
+                        <span className={w.stock > 0 ? "font-serif text-lg" : "text-xs text-muted"}>
+                          {w.stock > 0 ? t("wines.bottlesCount", { count: w.stock }) : t("wines.finished")}
+                        </span>
                       </span>
                     </div>
                   </div>

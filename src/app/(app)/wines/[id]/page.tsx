@@ -6,7 +6,7 @@ import { parsePairings } from "@/lib/pairings";
 import { WindowBadge } from "@/components/window-badge";
 import { requireUser } from "@/lib/auth";
 import { windowStatus } from "@/lib/drinking-window";
-import { formatMoney } from "@/lib/format";
+import { formatBottleSize, formatMoney } from "@/lib/format";
 import { wineLocations } from "@/lib/services/cellar";
 import { listTastingNotes, ratingSummary } from "@/lib/services/tasting";
 import { getWine } from "@/lib/services/wines";
@@ -38,7 +38,7 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
     [t("wines.country"), wine.country],
     [t("wines.grapes"), wine.grapes],
     [t("wines.alcohol"), wine.alcohol != null ? `${wine.alcohol} %` : null],
-    [t("wines.bottleSize"), wine.bottleSizeMl >= 1000 ? `${wine.bottleSizeMl / 1000} L` : `${wine.bottleSizeMl / 10} cl`],
+    [t("wines.bottleSize"), formatBottleSize(wine.bottleSizeMl, locale)],
     [t("wines.purchasePrice"), money(wine.purchasePrice)],
     [t("wines.estimatedValue"), money(wine.estimatedValue)],
   ];

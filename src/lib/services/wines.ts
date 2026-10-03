@@ -62,8 +62,8 @@ export type WineListFilters = {
   q?: string;
   color?: string;
   region?: string;
-  /** in stock (default), finished (all bottles gone) or all. */
-  status?: "stock" | "finished" | "all";
+  /** in stock (default), tasted (has a tasting note or a bottle drunk, stock or not), or all. */
+  status?: "stock" | "tasted" | "all";
   /** Minimum average tasting rating (0–5). */
   minRating?: number;
   pairing?: string;
@@ -103,8 +103,12 @@ export function listWines(userId: string, f: WineListFilters = {}) {
     .as("ratings");
   const stockCount = sql<number>`coalesce(${stock.n}, 0)`;
 
-  if (f.status === "finished") conditions.push(sql`${stockCount} = 0`);
-  else if (f.status !== "all") conditions.push(sql`${stockCount} > 0`);
+  if (f.status === "tasted") {
+    conditions.push(
+      sql`(exists (select 1 from ${tastingNotes} where ${tastingNotes.wineId} = ${wines.id})
+        or exists (select 1 from ${movements} where ${movements.wineId} = ${wines.id} and ${movements.reason} = 'drunk'))`,
+    );
+  } else if (f.status !== "all") conditions.push(sql`${stockCount} > 0`);
   if (f.minRating) conditions.push(sql`${ratings.avg} >= ${f.minRating}`);
 
   const order = {
@@ -125,6 +129,7 @@ export function listWines(userId: string, f: WineListFilters = {}) {
       region: wines.region,
       appellation: wines.appellation,
       imageFile: wines.imageFile,
+      bottleSizeMl: wines.bottleSizeMl,
       drinkFrom: wines.drinkFrom,
       peakFrom: wines.peakFrom,
       peakUntil: wines.peakUntil,

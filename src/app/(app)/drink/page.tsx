@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth";
 import type { WindowStatus } from "@/lib/drinking-window";
 import { getDrinkList } from "@/lib/queries/drink";
 import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
-import { getT } from "@/i18n/server";
+import { getLocale, getT } from "@/i18n/server";
+import { formatBottleSize } from "@/lib/format";
 import type { MessageKey } from "@/i18n/config";
 import { DrinkOneButton } from "./drink-one-button";
 import Link from "next/link";
@@ -21,7 +22,7 @@ const SECTIONS: { status: WindowStatus; title: MessageKey; hint: MessageKey }[] 
 
 export default async function DrinkPage() {
   const user = await requireUser();
-  const t = await getT();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   const groups = getDrinkList(user.id);
   const total = Object.values(groups).reduce((s, g) => s + g.length, 0);
   const urgent = groups.past.length + groups.declining.length;
@@ -64,7 +65,7 @@ export default async function DrinkPage() {
                           {w.producer} {w.vintage && <span className="font-normal text-muted">{w.vintage}</span>}
                         </p>
                         <p className="truncate text-xs text-muted">
-                          {[w.name, w.appellation ?? w.region].filter(Boolean).join(" · ")}
+                          {[w.name, w.appellation ?? w.region, formatBottleSize(w.bottleSizeMl, locale)].filter(Boolean).join(" · ")}
                           {years && <> · {years}</>}
                         </p>
                       </Link>

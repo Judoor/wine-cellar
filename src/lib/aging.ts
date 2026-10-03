@@ -60,6 +60,10 @@ const RULES: Rule[] = [
   { re: /madiran|cahors/, colors: RED, offsets: [4, 7, 15, 20] },
   { re: /pic saint-loup|terrasses du larzac|faugères|faugeres|saint-chinian|minervois|corbières|corbieres|fitou|collioure/, colors: RED, offsets: [2, 4, 8, 12] },
 
+  // Jura (whites and savagnin age well; vin jaune handled above)
+  { re: /arbois|côtes du jura|cotes du jura|l'étoile|l'etoile|savagnin|jura/, colors: WHITE, offsets: [2, 4, 10, 15] },
+  { re: /arbois|côtes du jura|cotes du jura|jura|poulsard|trousseau/, colors: RED, offsets: [1, 3, 8, 12] },
+
   // Loire
   { re: /savennières|savennieres/, offsets: [3, 6, 15, 20] },
   { re: /chinon|bourgueil|saumur-champigny|saint-nicolas/, colors: RED, offsets: [2, 4, 8, 12] },

@@ -17,6 +17,7 @@ export function getDrinkList(userId: string) {
       appellation: wines.appellation,
       region: wines.region,
       imageFile: wines.imageFile,
+      bottleSizeMl: wines.bottleSizeMl,
       drinkFrom: wines.drinkFrom,
       peakFrom: wines.peakFrom,
       peakUntil: wines.peakUntil,

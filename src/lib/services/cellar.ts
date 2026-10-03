@@ -98,6 +98,7 @@ export type PlacedBottle = {
   name: string | null;
   vintage: number | null;
   color: (typeof schema.WINE_COLORS)[number];
+  bottleSizeMl: number;
 };
 
 export function getLocation(userId: string, locationId: string) {
@@ -116,6 +117,7 @@ export function getLocation(userId: string, locationId: string) {
       name: wines.name,
       vintage: wines.vintage,
       color: wines.color,
+      bottleSizeMl: wines.bottleSizeMl,
     })
     .from(bottles)
     .innerJoin(wines, eq(bottles.wineId, wines.id))
@@ -171,6 +173,7 @@ export function listUnplaced(userId: string) {
       name: wines.name,
       vintage: wines.vintage,
       color: wines.color,
+      bottleSizeMl: wines.bottleSizeMl,
       count: count(bottles.id),
     })
     .from(bottles)

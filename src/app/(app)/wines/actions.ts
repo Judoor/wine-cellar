@@ -47,10 +47,15 @@ export async function saveWine(wineId: string | null, _: WineFormState, formData
     // Created from a wishlist entry ("Bought it"): photo and tasting move to the new wine.
     const wishlistId = formData.get("wishlistId");
     const wish = typeof wishlistId === "string" && wishlistId ? getWishlistItem(user.id, wishlistId) : undefined;
+    // The wish is gone: this form was already saved (e.g. browser "back" then "Save" again).
+    if (typeof wishlistId === "string" && wishlistId && !wish) {
+      if (newImage) await deleteImage(newImage);
+      return { error: "wishlist.alreadyBought" };
+    }
     const imageFile = newImage ?? (formData.get("removePhoto") === "1" ? null : (wish?.imageFile ?? null));
     wineId = createWine(user.id, parsed.data, quantity, imageFile).id;
     if (wish) {
-      if (wish.rating != null || wish.tastedWhere) {
+      if (wish.rating != null || wish.tastedWhere || wish.tastedOn) {
         addTastingNote(user.id, wineId, {
           date: wish.tastedOn ?? wish.createdAt,
           rating: wish.rating,

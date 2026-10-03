@@ -16,11 +16,12 @@ export function windowStatus(w: WindowFields, year = new Date().getFullYear()): 
   return "ready";
 }
 
+// Traffic-light scale: red (too young) → yellow (ready) → green (peak) → dark green (drink soon) → black (past).
 export const WINDOW_STATUS_STYLES: Record<WindowStatus, string> = {
   unknown: "border-border bg-surface-2 text-muted",
-  tooYoung: "border-[#9bb0c9]/50 bg-[#e5ecf4] text-[#3d5674]",
-  ready: "border-success/30 bg-success/10 text-success",
-  peak: "border-accent/40 bg-accent-soft text-[#8a5a1c]",
-  declining: "border-[#d9863a]/40 bg-[#fbe5cf] text-[#9a4d12]",
-  past: "border-danger/30 bg-danger/10 text-danger",
+  tooYoung: "border-[#c0392b]/35 bg-[#f9dcd8] text-[#a5281b]",
+  ready: "border-[#c9a400]/45 bg-[#fbf1bf] text-[#7a5f00]",
+  peak: "border-[#3f8f3a]/40 bg-[#d9efd3] text-[#2b6b27]",
+  declining: "border-[#1f4d2b] bg-[#1f4d2b] text-white",
+  past: "border-[#1c1917] bg-[#1c1917] text-[#f5f0e8]",
 };

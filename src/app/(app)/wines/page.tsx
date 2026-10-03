@@ -1,6 +1,7 @@
 import { Plus, Wine as WineIcon } from "lucide-react";
 import Link from "next/link";
 import { buttonClass, Card, PageTitle } from "@/components/ui";
+import { Stars } from "@/components/stars";
 import { WindowBadge } from "@/components/window-badge";
 import { requireUser } from "@/lib/auth";
 import { windowStatus } from "@/lib/drinking-window";
@@ -9,7 +10,9 @@ import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { getT } from "@/i18n/server";
 import { WineFilters } from "./wine-filters";
 
-const SORTS = ["recent", "producer", "vintage", "window"] as const;
+const SORTS = ["recent", "producer", "vintage", "window", "rating"] as const;
+const STATUSES = ["stock", "finished", "all"] as const;
+const WINDOWS = ["peak", "ready", "declining", "past", "tooYoung", "unknown"] as const;
 
 export default async function WinesPage(props: PageProps<"/wines">) {
   const user = await requireUser();
@@ -21,16 +24,19 @@ export default async function WinesPage(props: PageProps<"/wines">) {
     q: str("q"),
     color: str("color"),
     region: str("region"),
-    includeFinished: str("all") === "1",
+    status: STATUSES.find((s) => s === str("status")) ?? "stock",
+    minRating: Number(str("rating")) || undefined,
+    pairing: str("pairing"),
+    window: WINDOWS.find((w) => w === str("window")),
     sort: SORTS.find((s) => s === str("sort")) ?? "recent",
   };
   const wines = listWines(user.id, filters);
-  const isFiltered = !!(filters.q || filters.color || filters.region);
+  const isFiltered = !!(filters.q || filters.color || filters.region || filters.minRating || filters.pairing || filters.window || filters.status !== "stock");
 
   return (
     <>
       <PageTitle
-        subtitle={t("wines.subtitle", { count: wines.length })}
+        subtitle={wines.length === 1 ? t("wines.subtitleOne") : t("wines.subtitle", { count: wines.length })}
         actions={
           <Link href="/wines/new" className={buttonClass("primary")}>
             <Plus className="size-4" aria-hidden />
@@ -70,6 +76,11 @@ export default async function WinesPage(props: PageProps<"/wines">) {
                     <p className="truncate font-semibold">{w.producer}</p>
                     <p className="truncate text-sm text-muted">{[w.name, w.vintage ?? t("wines.nonVintage")].filter(Boolean).join(" · ")}</p>
                     <p className="truncate text-xs uppercase tracking-wider text-muted">{w.appellation ?? w.region}</p>
+                    {w.rating != null && (
+                      <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                        <Stars value={w.rating} /> {Number(w.rating).toFixed(1)}
+                      </span>
+                    )}
                     <div className="mt-auto flex items-center justify-between gap-2 pt-2">
                       <WindowBadge status={status} label={t(`window.${status}`)} />
                       <span className={w.stock > 0 ? "font-serif text-lg" : "text-xs text-muted"}>

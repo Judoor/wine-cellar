@@ -1,4 +1,5 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
+import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { requireUser } from "@/lib/auth";
 import { urgentCount } from "@/lib/queries/drink";
@@ -35,11 +36,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <span className="text-[#fff3dc]">
           <Logo name={t("app.name")} className="text-xl" />
         </span>
-        <form action={logout}>
-          <button aria-label={t("nav.logout")} className="rounded-lg p-2 opacity-80 hover:bg-white/10">
-            <LogOut className="size-5" />
-          </button>
-        </form>
+        <div className="flex items-center gap-1">
+          <Link href="/settings" aria-label={t("nav.settings")} className="rounded-lg p-2 opacity-80 hover:bg-white/10">
+            <Settings className="size-5" />
+          </Link>
+          <form action={logout}>
+            <button aria-label={t("nav.logout")} className="rounded-lg p-2 opacity-80 hover:bg-white/10">
+              <LogOut className="size-5" />
+            </button>
+          </form>
+        </div>
       </header>
 
       <main className="stone min-w-0 flex-1">

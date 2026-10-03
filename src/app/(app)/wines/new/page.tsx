@@ -32,6 +32,8 @@ export default async function NewWinePage(props: PageProps<"/wines/new">) {
             region: app?.region ?? null,
             purchasePrice: wish.targetPrice,
             notes: wish.notes,
+            barcode: wish.barcode,
+            imageFile: wish.imageFile,
             ...(wish.color &&
               estimateWindow({ color: wish.color, vintage: wish.vintage, appellation: wish.appellation, region: app?.region, name: wish.name })),
           }

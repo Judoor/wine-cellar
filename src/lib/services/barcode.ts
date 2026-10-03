@@ -4,6 +4,7 @@ import { searchCatalogWines, type CatalogWine } from "@/lib/catalog";
 import { getDb, schema } from "@/lib/db";
 import type { WineColor } from "@/lib/db/schema";
 import { getSetting } from "@/lib/settings";
+import { findWishlistByBarcode } from "@/lib/services/wishlist";
 
 export function externalLookupsEnabled() {
   if (process.env.DISABLE_EXTERNAL_LOOKUPS === "true") return false;
@@ -13,6 +14,7 @@ export function externalLookupsEnabled() {
 export type BarcodeResult = {
   barcode: string;
   existingWineId?: string;
+  existingWishlistId?: string;
   found: boolean;
   product?: {
     producer: string | null;
@@ -47,7 +49,12 @@ export async function lookupBarcode(userId: string, barcode: string): Promise<Ba
     .from(schema.wines)
     .where(and(eq(schema.wines.userId, userId), eq(schema.wines.barcode, barcode)))
     .get();
-  const result: BarcodeResult = { barcode, existingWineId: existing?.id, found: false };
+  const result: BarcodeResult = {
+    barcode,
+    existingWineId: existing?.id,
+    existingWishlistId: findWishlistByBarcode(userId, barcode)?.id,
+    found: false,
+  };
   if (!externalLookupsEnabled()) return result;
 
   try {

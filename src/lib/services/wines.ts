@@ -5,8 +5,9 @@ import { and, asc, count, desc, eq, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema, UPLOADS_DIR } from "@/lib/db";
 import { MOVEMENT_REASONS, WINE_COLORS, type MovementReason } from "@/lib/db/schema";
+import { windowStatus, type WindowStatus } from "@/lib/drinking-window";
 
-const { wines, bottles, movements } = schema;
+const { wines, bottles, movements, tastingNotes } = schema;
 
 /* ---------- Validation ---------- */
 
@@ -61,12 +62,17 @@ export type WineListFilters = {
   q?: string;
   color?: string;
   region?: string;
-  includeFinished?: boolean;
-  sort?: "recent" | "producer" | "vintage" | "window";
+  /** in stock (default), finished (all bottles gone) or all. */
+  status?: "stock" | "finished" | "all";
+  /** Minimum average tasting rating (0–5). */
+  minRating?: number;
+  pairing?: string;
+  window?: WindowStatus;
+  sort?: "recent" | "producer" | "vintage" | "window" | "rating";
 };
 
 export function listWines(userId: string, f: WineListFilters = {}) {
-  const stock = count(bottles.id);
+  const db = getDb();
   const conditions = [eq(wines.userId, userId)];
   if (f.q) {
     const term = `%${f.q.trim()}%`;
@@ -84,15 +90,32 @@ export function listWines(userId: string, f: WineListFilters = {}) {
     conditions.push(eq(wines.color, f.color as (typeof WINE_COLORS)[number]));
   }
   if (f.region) conditions.push(eq(wines.region, f.region));
+  if (f.pairing && /^[a-zA-Z]+$/.test(f.pairing)) {
+    conditions.push(sql`(',' || coalesce(${wines.pairings}, '') || ',') like ${`%,${f.pairing},%`}`);
+  }
+
+  // Stock and average rating as subqueries, so finished wines keep their notes.
+  const stock = db.select({ wineId: bottles.wineId, n: count().as("n") }).from(bottles).groupBy(bottles.wineId).as("stock");
+  const ratings = db
+    .select({ wineId: tastingNotes.wineId, avg: sql<number>`avg(${tastingNotes.rating})`.as("avg"), noteCount: count().as("note_count") })
+    .from(tastingNotes)
+    .groupBy(tastingNotes.wineId)
+    .as("ratings");
+  const stockCount = sql<number>`coalesce(${stock.n}, 0)`;
+
+  if (f.status === "finished") conditions.push(sql`${stockCount} = 0`);
+  else if (f.status !== "all") conditions.push(sql`${stockCount} > 0`);
+  if (f.minRating) conditions.push(sql`${ratings.avg} >= ${f.minRating}`);
 
   const order = {
     recent: [desc(wines.createdAt)],
     producer: [asc(wines.producer), asc(wines.vintage)],
     vintage: [sql`${wines.vintage} is null`, asc(wines.vintage)],
     window: [sql`coalesce(${wines.drinkUntil}, ${wines.peakUntil}, 9999)`, asc(wines.producer)],
+    rating: [sql`${ratings.avg} is null`, desc(ratings.avg), asc(wines.producer)],
   }[f.sort ?? "recent"];
 
-  const query = getDb()
+  const rows = db
     .select({
       id: wines.id,
       producer: wines.producer,
@@ -106,17 +129,20 @@ export function listWines(userId: string, f: WineListFilters = {}) {
       peakFrom: wines.peakFrom,
       peakUntil: wines.peakUntil,
       drinkUntil: wines.drinkUntil,
-      stock,
+      stock: stockCount,
+      rating: ratings.avg,
+      noteCount: sql<number>`coalesce(${ratings.noteCount}, 0)`,
     })
     .from(wines)
-    .leftJoin(bottles, eq(bottles.wineId, wines.id))
+    .leftJoin(stock, eq(stock.wineId, wines.id))
+    .leftJoin(ratings, eq(ratings.wineId, wines.id))
     .where(and(...conditions))
-    .groupBy(wines.id)
-    .orderBy(...order);
+    .orderBy(...order)
+    .all();
 
-  return f.includeFinished ? query.all() : query.having(sql`${stock} > 0`).all();
+  // The drinking window is computed in JS (same rules as everywhere else).
+  return f.window ? rows.filter((w) => windowStatus(w) === f.window) : rows;
 }
-
 export function listRegions(userId: string) {
   return getDb()
     .selectDistinct({ region: wines.region })
@@ -254,11 +280,15 @@ export async function deleteImage(name: string) {
   await fs.rm(path.join(/*turbopackIgnore: true*/ UPLOADS_DIR, name), { force: true });
 }
 
-/** Returns the image file name if it belongs to one of the user's wines. */
+/** Returns the image file name if it belongs to one of the user's wines or wishlist entries. */
 export function findUserImage(userId: string, name: string) {
-  return getDb()
-    .select({ imageFile: wines.imageFile })
-    .from(wines)
-    .where(and(eq(wines.userId, userId), eq(wines.imageFile, name)))
-    .get()?.imageFile;
+  const db = getDb();
+  return (
+    db.select({ imageFile: wines.imageFile }).from(wines).where(and(eq(wines.userId, userId), eq(wines.imageFile, name))).get()?.imageFile ??
+    db
+      .select({ imageFile: schema.wishlist.imageFile })
+      .from(schema.wishlist)
+      .where(and(eq(schema.wishlist.userId, userId), eq(schema.wishlist.imageFile, name)))
+      .get()?.imageFile
+  );
 }

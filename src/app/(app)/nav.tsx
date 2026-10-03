@@ -19,8 +19,8 @@ const items: {
   { href: "/wines", label: "nav.wines", icon: Wine, mobile: true },
   { href: "/cellar", label: "nav.cellar", icon: Grid3x3, mobile: true },
   { href: "/drink", label: "nav.toDrink", icon: GlassWater, mobile: true },
-  { href: "/wishlist", label: "nav.wishlist", icon: Heart },
-  { href: "/settings", label: "nav.settings", icon: Settings, mobile: true },
+  { href: "/wishlist", label: "nav.wishlist", icon: Heart, mobile: true },
+  { href: "/settings", label: "nav.settings", icon: Settings },
   { href: "/admin", label: "nav.admin", icon: Shield, adminOnly: true },
 ];
 

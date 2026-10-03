@@ -2,9 +2,10 @@
 
 import clsx from "clsx";
 import { Camera, Minus, Plus, Wand2, X } from "lucide-react";
-import { useActionState, useRef, useState } from "react";
+import { startTransition, useActionState, useRef, useState } from "react";
 import { Alert, Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { estimateWindow } from "@/lib/aging";
+import { resizeImage } from "@/lib/resize-image";
 import type { Wine, WineColor } from "@/lib/db/schema";
 import { PAIRING_KEYS } from "@/lib/pairings";
 import { WINE_COLOR_ORDER, WINE_COLOR_STYLES } from "@/lib/wine-colors";
@@ -19,19 +20,6 @@ import { countryName, QuickFill, type FillData } from "./quick-fill";
 const WINDOW_FIELDS = ["drinkFrom", "peakFrom", "peakUntil", "drinkUntil"] as const;
 
 const BOTTLE_SIZES = [375, 500, 750, 1500, 3000, 6000];
-
-/** Downscales phone photos (often 5-10 MB) before upload. */
-async function resizeImage(file: File, maxSide = 1600): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("resize failed"))), "image/jpeg", 0.85),
-  );
-}
 
 export function WineForm({
   wine,
@@ -50,8 +38,8 @@ export function WineForm({
   const { t, locale } = useI18n();
   const [state, formAction, pending] = useActionState(saveWine.bind(null, wine?.id ?? null), undefined);
   const formRef = useRef<HTMLFormElement>(null);
-  const [pairings, setPairings] = useState<string[]>(wine?.pairings?.split(",").filter(Boolean) ?? []);
-  const [barcode, setBarcode] = useState(wine?.barcode ?? "");
+  const [pairings, setPairings] = useState<string[]>((wine ?? initial)?.pairings?.split(",").filter(Boolean) ?? []);
+  const [barcode, setBarcode] = useState((wine ?? initial)?.barcode ?? "");
   const [windowNote, setWindowNote] = useState<MessageKey | null>(null);
 
   const field = (name: string) => formRef.current?.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
@@ -84,14 +72,18 @@ export function WineForm({
     if (WINDOW_FIELDS.every((k) => !read(k)) && read("vintage")) estimate(true);
   }
   const [photo, setPhoto] = useState<Blob | null>(null);
-  const [preview, setPreview] = useState<string | null>(wine?.imageFile ? `/api/uploads/${wine.imageFile}` : null);
+  const [preview, setPreview] = useState<string | null>((wine ?? initial)?.imageFile ? `/api/uploads/${(wine ?? initial)!.imageFile}` : null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const err = (name: string) => state?.fieldErrors?.[name];
 
+  // Pending resize, awaited on submit so a quick "Save" never drops the photo.
+  const resizing = useRef<Promise<Blob> | null>(null);
+
   async function onPhoto(file: File | undefined) {
     if (!file) return;
-    const blob = await resizeImage(file).catch(() => file);
+    resizing.current = resizeImage(file).catch(() => file);
+    const blob = await resizing.current;
     setPhoto(blob);
     setRemovePhoto(false);
     setPreview(URL.createObjectURL(blob));
@@ -99,9 +91,13 @@ export function WineForm({
 
   function submit(formData: FormData) {
     formData.delete("photoInput");
-    if (photo) formData.set("photo", photo, "label.jpg");
+    const pendingPhoto = resizing.current;
     if (removePhoto) formData.set("removePhoto", "1");
-    return formAction(formData);
+    if (!pendingPhoto || removePhoto) return formAction(formData);
+    return pendingPhoto.then((blob) => {
+      formData.set("photo", photo ?? blob, "label.jpg");
+      startTransition(() => formAction(formData));
+    });
   }
 
   const v = (k: keyof Wine) => ((wine ?? initial)?.[k] ?? "") as string | number;
@@ -143,6 +139,7 @@ export function WineForm({
             onClick={() => {
               setRemovePhoto(true);
               setPhoto(null);
+              resizing.current = null;
             }}
             className="mt-2 flex items-center gap-1 text-sm text-muted hover:text-danger"
           >

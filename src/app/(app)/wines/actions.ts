@@ -16,7 +16,7 @@ import {
   wineInputSchema,
 } from "@/lib/services/wines";
 import { addTastingNote, deleteTastingNote, tastingInputSchema, updateTastingNote } from "@/lib/services/tasting";
-import { deleteWishlistItem } from "@/lib/services/wishlist";
+import { deleteWishlistItem, getWishlistItem } from "@/lib/services/wishlist";
 import type { MessageKey } from "@/i18n/config";
 
 export type WineFormState = { error?: MessageKey; fieldErrors?: Record<string, MessageKey> } | undefined;
@@ -44,10 +44,25 @@ export async function saveWine(wineId: string | null, _: WineFormState, formData
     if (existing.imageFile && existing.imageFile !== imageFile) await deleteImage(existing.imageFile);
   } else {
     const quantity = Math.max(0, Math.min(500, Number(formData.get("quantity")) || 0));
-    wineId = createWine(user.id, parsed.data, quantity, newImage).id;
-    // Created from a wishlist entry ("Bought it"): the wish is fulfilled.
+    // Created from a wishlist entry ("Bought it"): photo and tasting move to the new wine.
     const wishlistId = formData.get("wishlistId");
-    if (typeof wishlistId === "string" && wishlistId) deleteWishlistItem(user.id, wishlistId);
+    const wish = typeof wishlistId === "string" && wishlistId ? getWishlistItem(user.id, wishlistId) : undefined;
+    const imageFile = newImage ?? (formData.get("removePhoto") === "1" ? null : (wish?.imageFile ?? null));
+    wineId = createWine(user.id, parsed.data, quantity, imageFile).id;
+    if (wish) {
+      if (wish.rating != null || wish.tastedWhere) {
+        addTastingNote(user.id, wineId, {
+          date: wish.tastedOn ?? wish.createdAt,
+          rating: wish.rating,
+          occasion: wish.tastedWhere,
+          notes: null,
+          companions: null,
+        });
+      }
+      deleteWishlistItem(user.id, wish.id);
+      // The photo now belongs to the wine; drop it only if it wasn't kept.
+      if (wish.imageFile && wish.imageFile !== imageFile) await deleteImage(wish.imageFile);
+    }
   }
 
   revalidatePath("/", "layout");

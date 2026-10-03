@@ -194,9 +194,15 @@ export const wishlist = sqliteTable(
     appellation: text("appellation"),
     targetPrice: real("target_price"),
     notes: text("notes"),
+    barcode: text("barcode"),
+    imageFile: text("image_file"),
+    // Tasted elsewhere (at a friend's, a restaurant…): 0–5, half steps.
+    rating: real("rating"),
+    tastedOn: integer("tasted_on", { mode: "timestamp" }),
+    tastedWhere: text("tasted_where"),
     createdAt: createdAt(),
   },
-  (t) => [index("wishlist_user_idx").on(t.userId)],
+  (t) => [index("wishlist_user_idx").on(t.userId), index("wishlist_barcode_idx").on(t.userId, t.barcode)],
 );
 
 export type User = typeof users.$inferSelect;

@@ -39,6 +39,7 @@ export type FillData = Partial<{
 type BarcodeResult = {
   barcode: string;
   existingWineId?: string;
+  existingWishlistId?: string;
   found: boolean;
   product?: { producer: string | null; name: string | null; vintage: number | null; color: WineColor | null; bottleSizeMl: number | null };
   match?: CatalogWine;
@@ -96,7 +97,7 @@ export function QuickFill({ catalogSize, barcodeEnabled, onFill }: { catalogSize
   const [results, setResults] = useState<CatalogWine[] | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string; wineId?: string } | null>(null);
+  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string; href?: string } | null>(null);
   const [manualCode, setManualCode] = useState("");
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -143,7 +144,11 @@ export function QuickFill({ catalogSize, barcodeEnabled, onFill }: { catalogSize
       if (!res.ok) throw new Error();
       const r = (await res.json()) as BarcodeResult;
       if (r.existingWineId) {
-        setMessage({ kind: "success", text: t("quickFill.alreadyOwned"), wineId: r.existingWineId });
+        setMessage({ kind: "success", text: t("quickFill.alreadyOwned"), href: `/wines/${r.existingWineId}` });
+        return;
+      }
+      if (r.existingWishlistId) {
+        setMessage({ kind: "success", text: t("quickFill.alreadyWished"), href: "/wishlist" });
         return;
       }
       const data: FillData = { barcode: r.barcode, ...(r.match ? catalogToFill(r.match, locale) : {}) };
@@ -251,8 +256,8 @@ export function QuickFill({ catalogSize, barcodeEnabled, onFill }: { catalogSize
         <div className="mt-3">
           <Alert kind={message.kind}>
             {message.text}{" "}
-            {message.wineId && (
-              <Link href={`/wines/${message.wineId}`} className="font-semibold underline">
+            {message.href && (
+              <Link href={message.href} className="font-semibold underline">
                 {t("quickFill.openIt")}
               </Link>
             )}

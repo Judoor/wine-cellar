@@ -1,17 +1,20 @@
+# Wine Cellar — paste this into Dockge (or run `docker compose up -d`).
 services:
   winecellar:
     image: ghcr.io/judoor/wine-cellar:latest
-    # To build from source instead, comment the line above and uncomment:
-    # build: .
     container_name: winecellar
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3000:3000" # change the left number if port 3000 is already used on your server
     volumes:
-      # Database + label photos. Back up this folder.
+      # Database + label photos. Back up this folder. Relative to the stack folder in Dockge.
       - ./data:/data
     environment:
+      - TZ=Europe/Paris
+      # Owner of the data folder. 1000 = first Linux user; on TrueNAS use 568 (the "apps" user).
+      - PUID=1000
+      - PGID=1000
       # Set to "false" to forbid new sign-ups (the first account can always be created).
       - ALLOW_REGISTRATION=true
-      # Set to "true" only if you access the app through HTTPS (reverse proxy).
+      # Set to "true" only when the app is reached through HTTPS (reverse proxy, Tailscale…).
       - SECURE_COOKIES=false

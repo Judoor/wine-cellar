@@ -13,5 +13,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/health|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|ico|webmanifest)$).*)"],
+  // Public assets (icons, manifest, service worker, offline page) must load without a session.
+  matcher: ["/((?!api/health|_next/static|_next/image|favicon.ico|sw.js|offline.html|.*\\.(?:png|svg|ico|webmanifest)$).*)"],
 };

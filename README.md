@@ -3,21 +3,9 @@
 A self-hosted wine cellar manager: track your bottles, place them in a visual 2D cellar,
 follow drinking windows, write tasting notes. Multi-user, English & French.
 
-## Run with Docker Compose
+## Run with Docker Compose (Dockge, Portainer, TrueNAS…)
 
-```yaml
-services:
-  winecellar:
-    image: ghcr.io/judoor/wine-cellar:latest
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./data:/data     # database + label photos — back this folder up
-    environment:
-      - ALLOW_REGISTRATION=true
-      - SECURE_COOKIES=false
-```
+Use [`docker-compose.yml`](docker-compose.yml) — paste it into Dockge/Portainer, or:
 
 ```bash
 docker compose up -d
@@ -25,15 +13,23 @@ docker compose up -d
 
 Open `http://<server-ip>:3000`. **The first account created becomes the administrator.**
 The administrator can then close registrations from the *Administration* page.
+French step-by-step guide: [docs/installation-fr.md](docs/installation-fr.md).
 
 ### Environment variables
 
 | Variable | Default | Description |
 |---|---|---|
+| `PUID` / `PGID` | `1000` | Owner of the data folder; the container fixes ownership at startup. TrueNAS: `568`. |
+| `TZ` | – | Time zone, e.g. `Europe/Paris`. |
 | `ALLOW_REGISTRATION` | `true` | `false` forbids new sign-ups (the very first account can always be created). |
-| `SECURE_COOKIES` | `false` | Set to `true` when the app is served over HTTPS (reverse proxy). |
+| `SECURE_COOKIES` | `false` | Set to `true` when the app is served over HTTPS (reverse proxy, Tailscale). |
+| `DISABLE_EXTERNAL_LOOKUPS` | `false` | `true` disables the barcode lookup on Open Food Facts. |
 | `DATA_DIR` | `/data` | Where the SQLite database and uploads are stored. |
-| `PORT` | `3000` | HTTP port inside the container. |
+
+### Install on your phone (PWA)
+
+Browsers only allow installing the app (home-screen icon, full screen) over **HTTPS**. Put it behind a reverse proxy
+or use `tailscale serve --bg 3000`, set `SECURE_COOKIES=true`, then use *Install app* (Android) / *Add to Home Screen* (iOS).
 
 ### Backup
 

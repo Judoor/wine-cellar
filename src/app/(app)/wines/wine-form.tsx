@@ -1,12 +1,12 @@
 "use client";
 
 import clsx from "clsx";
-import { Camera, Minus, Plus, Wand2, X } from "lucide-react";
-import { startTransition, useActionState, useRef, useState } from "react";
+import { Minus, Plus, Wand2 } from "lucide-react";
+import { PhotoPicker } from "@/components/photo-picker";
+import { useActionState, useRef, useState } from "react";
 import { Alert, Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { estimateWindow } from "@/lib/aging";
 import { formatBottleSize } from "@/lib/format";
-import { resizeImage } from "@/lib/resize-image";
 import type { Wine, WineColor } from "@/lib/db/schema";
 import { PAIRING_KEYS } from "@/lib/pairings";
 import { WINE_COLOR_ORDER, WINE_COLOR_STYLES } from "@/lib/wine-colors";
@@ -73,39 +73,16 @@ export function WineForm({
     if (WINDOW_FIELDS.every((k) => !read(k)) && read("vintage")) estimate(true);
   }
   const [photo, setPhoto] = useState<Blob | null>(null);
-  const [preview, setPreview] = useState<string | null>((wine ?? initial)?.imageFile ? `/api/uploads/${(wine ?? initial)!.imageFile}` : null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const err = (name: string) => state?.fieldErrors?.[name];
-
-  // Pending resize, awaited on submit so a quick "Save" never drops the photo.
-  const resizing = useRef<Promise<Blob> | null>(null);
-  // Locks "Save" while a photo is being prepared (prevents double submissions).
-  const [waitingPhoto, setWaitingPhoto] = useState(false);
-
-  async function onPhoto(file: File | undefined) {
-    if (!file) return;
-    resizing.current = resizeImage(file).catch(() => file);
-    const blob = await resizing.current;
-    setPhoto(blob);
-    setRemovePhoto(false);
-    setPreview(URL.createObjectURL(blob));
-  }
+  const initialImage = (wine ?? initial)?.imageFile;
 
   function submit(formData: FormData) {
-    formData.delete("photoInput");
-    const pendingPhoto = resizing.current;
+    if (photo) formData.set("photo", photo, "label.jpg");
     if (removePhoto) formData.set("removePhoto", "1");
-    if (!pendingPhoto || removePhoto) return formAction(formData);
-    if (waitingPhoto) return;
-    setWaitingPhoto(true);
-    return pendingPhoto.then((blob) => {
-      formData.set("photo", photo ?? blob, "label.jpg");
-      startTransition(() => formAction(formData));
-      setWaitingPhoto(false);
-    });
+    return formAction(formData);
   }
-
   const v = (k: keyof Wine) => ((wine ?? initial)?.[k] ?? "") as string | number;
 
   return (
@@ -121,39 +98,15 @@ export function WineForm({
       {/* Photo */}
       <Card className="h-fit">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">{t("wines.photo")}</p>
-        <label className="group relative flex aspect-[4/3] cursor-pointer lg:aspect-[3/4] items-center justify-center overflow-hidden rounded border-2 border-dashed border-border bg-surface-2 hover:border-accent">
-          {preview && !removePhoto ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="" className="size-full object-cover" />
-          ) : (
-            <span className="flex flex-col items-center gap-2 text-sm text-muted">
-              <Camera className="size-8" aria-hidden />
-              {t("wines.photo")}
-            </span>
-          )}
-          <input
-            type="file"
-            name="photoInput"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={(e) => onPhoto(e.target.files?.[0])}
-          />
-        </label>
-        {preview && !removePhoto && (
-          <button
-            type="button"
-            onClick={() => {
-              setRemovePhoto(true);
-              setPhoto(null);
-              resizing.current = null;
-            }}
-            className="mt-2 flex items-center gap-1 text-sm text-muted hover:text-danger"
-          >
-            <X className="size-4" aria-hidden /> {t("wines.photoRemove")}
-          </button>
-        )}
+        <PhotoPicker
+          initialSrc={initialImage ? `/api/uploads/${initialImage}` : null}
+          className="[&>div:first-child]:aspect-[4/3] lg:[&>div:first-child]:aspect-[3/4]"
+          onChange={({ blob, removed }) => {
+            setPhoto(blob);
+            setRemovePhoto(removed);
+          }}
+        />
       </Card>
-
       <div className="space-y-5">
         <Card>
           <h2 className="mb-4 font-serif text-2xl">{t("wines.sectionIdentity")}</h2>
@@ -326,7 +279,7 @@ export function WineForm({
         {state?.error && <Alert>{t(state.error)}</Alert>}
 
         <div className="sticky bottom-24 z-10 flex gap-3 md:static">
-          <Button type="submit" disabled={pending || waitingPhoto} className="flex-1 shadow-lg md:flex-none md:shadow-sm">
+          <Button type="submit" disabled={pending} className="flex-1 shadow-lg md:flex-none md:shadow-sm">
             {t("common.save")}
           </Button>
           <Button type="button" variant="secondary" onClick={() => window.history.back()}>

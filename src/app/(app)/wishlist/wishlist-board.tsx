@@ -1,14 +1,14 @@
 "use client";
 
-import { Camera, Heart, MapPin, Pencil, Plus, ShoppingBag, Trash, X } from "lucide-react";
+import { Heart, MapPin, Pencil, Plus, ShoppingBag, Trash } from "lucide-react";
+import { PhotoPicker } from "@/components/photo-picker";
 import Link from "next/link";
-import { startTransition, useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { Stars, StarInput } from "@/components/stars";
 import { Alert, Button, buttonClass, Card, Field, Input, Select, Textarea } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { WineColor } from "@/lib/db/schema";
 import { formatMoney } from "@/lib/format";
-import { resizeImage } from "@/lib/resize-image";
 import { WINE_COLOR_ORDER, WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { useI18n } from "@/i18n/client";
 import { QuickFill, type FillData } from "../wines/quick-fill";
@@ -166,7 +166,6 @@ function WishlistForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [barcode, setBarcode] = useState(item?.barcode ?? "");
   const [photo, setPhoto] = useState<Blob | null>(null);
-  const [preview, setPreview] = useState<string | null>(item?.imageFile ? `/api/uploads/${item.imageFile}` : null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [state, action, pending] = useActionState(async (prev: Awaited<ReturnType<typeof saveWishlistItem>>, fd: FormData) => {
     const result = await saveWishlistItem(item?.id ?? null, prev, fd);
@@ -186,34 +185,11 @@ function WishlistForm({
     if (d.barcode) setBarcode(d.barcode);
   }
 
-  // Pending resize, awaited on submit so a quick "Save" never drops the photo.
-  const resizing = useRef<Promise<Blob> | null>(null);
-  // Locks "Save" while a photo is being prepared (prevents double submissions).
-  const [waitingPhoto, setWaitingPhoto] = useState(false);
-
-  async function onPhoto(file: File | undefined) {
-    if (!file) return;
-    resizing.current = resizeImage(file).catch(() => file);
-    const blob = await resizing.current;
-    setPhoto(blob);
-    setRemovePhoto(false);
-    setPreview(URL.createObjectURL(blob));
-  }
-
   function submit(fd: FormData) {
-    fd.delete("photoInput");
-    const pendingPhoto = resizing.current;
+    if (photo) fd.set("photo", photo, "label.jpg");
     if (removePhoto) fd.set("removePhoto", "1");
-    if (!pendingPhoto) return action(fd);
-    if (waitingPhoto) return;
-    setWaitingPhoto(true);
-    return pendingPhoto.then((blob) => {
-      fd.set("photo", photo ?? blob, "label.jpg");
-      startTransition(() => action(fd));
-      setWaitingPhoto(false);
-    });
+    return action(fd);
   }
-
   return (
     <Card>
       {catalogSize > 0 && (
@@ -223,35 +199,15 @@ function WishlistForm({
       )}
       <form ref={formRef} action={submit} className="space-y-4">
         <input type="hidden" name="barcode" value={barcode} />
-        <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
-          <div>
-            <label className="relative flex aspect-[3/4] w-28 cursor-pointer items-center justify-center overflow-hidden rounded border-2 border-dashed border-border bg-surface-2 hover:border-accent sm:w-full">
-              {preview && !removePhoto ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={preview} alt="" className="size-full object-cover" />
-              ) : (
-                <span className="flex flex-col items-center gap-1 text-center text-xs text-muted">
-                  <Camera className="size-6" aria-hidden />
-                  {t("wines.photo")}
-                </span>
-              )}
-              <input type="file" name="photoInput" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => onPhoto(e.target.files?.[0])} />
-            </label>
-            {preview && !removePhoto && (
-              <button
-                type="button"
-                onClick={() => {
-                  setRemovePhoto(true);
-                  setPhoto(null);
-                  resizing.current = null;
-                }}
-                className="mt-1 flex items-center gap-1 text-xs text-muted hover:text-danger"
-              >
-                <X className="size-3" aria-hidden /> {t("wines.photoRemove")}
-              </button>
-            )}
-          </div>
-          <div className="grid content-start gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-[12rem_1fr]">
+          <PhotoPicker
+            initialSrc={item?.imageFile ? `/api/uploads/${item.imageFile}` : null}
+            className="w-full max-w-52 sm:max-w-none [&>div:first-child]:aspect-[3/4] [&>div:first-child]:max-h-48 sm:[&>div:first-child]:max-h-none"
+            onChange={({ blob, removed }) => {
+              setPhoto(blob);
+              setRemovePhoto(removed);
+            }}
+          />          <div className="grid content-start gap-4 sm:grid-cols-2">
             <Field label={`${t("wines.producer")} *`} htmlFor={`w-producer-${id}`}>
               <Input id={`w-producer-${id}`} name="producer" defaultValue={item?.producer} required />
             </Field>
@@ -306,7 +262,7 @@ function WishlistForm({
         )}
         {state?.error && <Alert>{t(state.error)}</Alert>}
         <div className="flex gap-2">
-          <Button type="submit" disabled={pending || waitingPhoto}>
+          <Button type="submit" disabled={pending}>
             {t("common.save")}
           </Button>
           <Button type="button" variant="ghost" onClick={onDone}>

@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* "Pierre & chêne": limestone walls, oak barrels, candle light, glass colors. */
+:root {
+  --background: #ece2d0;
+  --surface: #faf5ec;
+  --surface-2: #f3e9d8;
+  --foreground: #3a2517;
+  --muted: #85684d;
+  --border: #d9c6a6;
+  --primary: #8c2a2f;
+  --primary-hover: #74222a;
+  --primary-foreground: #ffffff;
+  --accent: #b8862f;
+  --accent-soft: #f3e3c0;
+  --oak: #3a2416;
+  --oak-light: #4a2f1c;
+  --oak-foreground: #ecdcc0;
+  --danger: #a3231f;
+  --success: #4f6b2a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-oak: var(--oak);
+  --color-oak-light: var(--oak-light);
+  --color-oak-foreground: var(--oak-foreground);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+
+  /* Glass colors, pale gold to deep red */
+  --color-wine-white: #e9cf7a;
+  --color-wine-sparkling: #f1e2a6;
+  --color-wine-sweet: #d9a440;
+  --color-wine-rose: #e59a7c;
+  --color-wine-red: #7d1a28;
+  --color-wine-fortified: #5c1220;
+
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-dm-serif);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Subtle limestone grain. */
+.stone {
+  position: relative;
+  isolation: isolate;
+}
+.stone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .25 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Oak barrel staves. */
+.oak {
+  background-color: var(--oak);
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0 3px, rgb(0 0 0 / 0.07) 3px 4px, transparent 4px 11px),
+    linear-gradient(180deg, var(--oak-light), var(--oak));
+  color: var(--oak-foreground);
+}

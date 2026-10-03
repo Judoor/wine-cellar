@@ -1,0 +1,17 @@
+services:
+  winecellar:
+    image: ghcr.io/judoor/wine-cellar:latest
+    # To build from source instead, comment the line above and uncomment:
+    # build: .
+    container_name: winecellar
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Database + label photos. Back up this folder.
+      - ./data:/data
+    environment:
+      # Set to "false" to forbid new sign-ups (the first account can always be created).
+      - ALLOW_REGISTRATION=true
+      # Set to "true" only if you access the app through HTTPS (reverse proxy).
+      - SECURE_COOKIES=false

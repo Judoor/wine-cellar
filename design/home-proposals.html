@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propositions page d'accueil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, system-ui, sans-serif; background: #2b211a; color: #222; }
+  .switcher { position: sticky; top: 0; z-index: 50; display: flex; gap: 8px; justify-content: center; padding: 12px; background: #1a130e; border-bottom: 1px solid #3a2a1e; flex-wrap: wrap; }
+  .switcher button { font: 600 14px Inter; padding: 10px 18px; border-radius: 999px; border: 1px solid #5a4330; background: transparent; color: #e8d9c0; cursor: pointer; }
+  .switcher button.active { background: #d9a14a; color: #1a130e; border-color: #d9a14a; }
+  .mock { display: none; min-height: calc(100vh - 62px); container-type: inline-size; position: relative; }
+  .mock.active { display: flex; }
+  /* Phone preview: the mockups use container queries, so they adapt to the frame width. */
+  body.phone .mock { width: 390px; height: 820px; min-height: 0; margin: 24px auto; overflow-y: auto; border-radius: 40px; border: 10px solid #0d0907; box-shadow: 0 30px 60px -20px #000; scrollbar-width: none; }
+  .switcher .sep { width: 1px; background: #5a4330; margin: 0 6px; }
+  .mock { flex-wrap: wrap; align-content: flex-start; } .mock > main { min-height: 100%; }
+  .tabbar { flex: 0 0 100%; display: none; position: sticky; bottom: 0; z-index: 10; justify-content: space-around; padding: 8px 4px 14px; backdrop-filter: blur(12px); }
+  .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; text-decoration: none; flex: 1; }
+  .tabbar svg { width: 22px; height: 22px; }
+  .grain::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .35; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .25 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .nav a { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; text-decoration: none; font-size: 14px; font-weight: 500; }
+  .glasses { display: flex; align-items: flex-end; gap: 6px; }
+  .bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 14px; padding: 12px 0; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+  @container (max-width: 1000px) { .grid4 { grid-template-columns: repeat(2, 1fr); } .grid2 { grid-template-columns: 1fr; } .side { display: none !important; } }
+  @container (max-width: 700px) {
+    .tabbar { display: flex; }
+    .grid4 { gap: 10px; } .card { padding: 16px !important; } .num { font-size: 30px !important; }
+    #a h1 { font-size: 38px !important; } #b h1 { font-size: 36px !important; } #c h1 { font-size: 42px !important; margin-top: 28px !important; }
+    #b .top .btn { width: 100%; }
+    #c .topnav a { display: none; } #c header { padding-bottom: 100px !important; }
+  }
+
+  /* ============ A — Cave aux chandelles (sombre) ============ */
+  #a { background: #15100c; color: #f1e6d2; }
+  #a .side { width: 240px; background: #1c1510; border-right: 1px solid #33261b; padding: 24px 16px; display: flex; flex-direction: column; }
+  #a .nav a { color: #a8927a; } #a .nav a.on { background: rgba(217,161,74,.12); color: #e7b562; }
+  #a main { flex: 1; padding: 0 0 40px; }
+  #a .hero { position: relative; padding: 56px 48px 40px; background:
+      radial-gradient(ellipse 60% 90% at 15% 0%, rgba(232,160,70,.35), transparent 60%),
+      radial-gradient(ellipse 40% 70% at 85% 10%, rgba(155,45,58,.25), transparent 60%), #15100c; overflow: hidden; }
+  #a h1 { font: italic 600 54px/1.05 "Cormorant Garamond", serif; color: #f6e7c8; }
+  #a .kicker { font-size: 12px; letter-spacing: .25em; text-transform: uppercase; color: #d9a14a; margin-bottom: 10px; }
+  #a .card { background: linear-gradient(180deg, #221a13, #1c1510); border: 1px solid #33261b; border-radius: 16px; padding: 20px; }
+  #a .num { font: 600 40px "Cormorant Garamond", serif; color: #e7b562; }
+  #a .lbl { font-size: 13px; color: #a8927a; }
+  #a h2 { font: 600 26px "Cormorant Garamond", serif; color: #f6e7c8; margin-bottom: 14px; }
+  #a .content { padding: 0 48px; display: grid; gap: 20px; }
+  #a .row + .row { border-top: 1px solid #2c2118; }
+  #a .pill { font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(217,161,74,.15); color: #e7b562; }
+  #a .btn { background: #d9a14a; color: #1a130e; font-weight: 600; font-size: 14px; padding: 11px 20px; border-radius: 999px; border: 0; }
+
+  /* ============ B — Pierre & chêne (clair) ============ */
+  #b { background: #ece2d0; color: #3a2517; }
+  #b .side { width: 250px; background: linear-gradient(180deg, #4a2f1c, #3a2416); color: #ecdcc0; padding: 24px 16px; display: flex; flex-direction: column; position: relative; }
+  #b .side::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .18;
+    background: repeating-linear-gradient(90deg, transparent 0 3px, rgba(0,0,0,.25) 3px 4px, transparent 4px 11px); }
+  #b .nav a { color: #cdb592; position: relative; z-index: 1; } #b .nav a.on { background: rgba(236,220,192,.14); color: #fff3dc; }
+  #b main { flex: 1; position: relative; padding: 44px 48px; }
+  #b .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; position: relative; }
+  #b h1 { font: 400 52px/1.05 "DM Serif Display", serif; color: #3a2517; }
+  #b h1 em { color: #8c2a2f; }
+  #b .sub { color: #85684d; margin-top: 8px; }
+  #b .card { position: relative; background: rgba(250,245,236,.85); border: 1px solid #d9c6a6; border-radius: 6px; padding: 22px; box-shadow: 0 1px 0 #fff inset, 0 8px 24px -16px rgba(58,37,23,.4); }
+  #b .num { font: 400 40px "DM Serif Display", serif; color: #3a2517; }
+  #b .lbl { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #9a7b5a; }
+  #b h2 { font: 400 24px "DM Serif Display", serif; margin-bottom: 12px; }
+  #b .row + .row { border-top: 1px dashed #d9c6a6; }
+  #b .pill { font-size: 11px; padding: 3px 9px; border-radius: 4px; background: #f3e3c0; color: #8a5a1c; border: 1px solid #e3cc9c; }
+  #b .btn { background: #8c2a2f; color: #fff; font-weight: 600; font-size: 14px; padding: 11px 20px; border-radius: 4px; border: 0; }
+  #b .stack { display: grid; gap: 20px; position: relative; }
+
+  /* ============ C — Chai & lumière (hybride, nav en haut) ============ */
+  #c { flex-direction: column; background: #f4ece0; color: #2e1f15; }
+  #c header { position: relative; color: #f6e9d3; background:
+      radial-gradient(ellipse 50% 120% at 50% 110%, rgba(240,170,80,.55), transparent 70%),
+      repeating-linear-gradient(90deg, #3b2617 0 46px, #33200f 46px 48px, #42291a 48px 96px, #2f1d10 96px 98px);
+      padding: 0 48px 120px; overflow: hidden; }
+  #c .topnav { display: flex; align-items: center; gap: 28px; padding: 18px 0; border-bottom: 1px solid rgba(246,233,211,.15); }
+  #c .topnav a { color: #d8bf9a; text-decoration: none; font-size: 14px; font-weight: 500; }
+  #c .topnav a.on { color: #fff; border-bottom: 2px solid #e8a94e; padding-bottom: 4px; }
+  #c h1 { font: 600 60px/1 "Cormorant Garamond", serif; margin-top: 56px; }
+  #c h1 span { color: #f0b860; font-style: italic; }
+  #c .sub { color: #d8bf9a; margin-top: 10px; max-width: 520px; }
+  #c .spectrum-wrap { position: absolute; right: 48px; bottom: 100px; }
+  #c main { margin: -80px 48px 40px; position: relative; display: grid; gap: 20px; }
+  #c .card { background: #fffaf2; border-radius: 18px; padding: 22px; box-shadow: 0 18px 40px -24px rgba(46,31,21,.45); border: 1px solid #eadbc4; }
+  #c .num { font: 600 42px "Cormorant Garamond", serif; color: #2e1f15; }
+  #c .lbl { font-size: 13px; color: #8a6f55; }
+  #c h2 { font: 600 26px "Cormorant Garamond", serif; margin-bottom: 12px; }
+  #c .row + .row { border-top: 1px solid #f0e4d2; }
+  #c .pill { font-size: 11px; padding: 4px 10px; border-radius: 999px; background: #fbeacc; color: #95621c; }
+  #c .btn { background: #e8a94e; color: #2e1f15; font-weight: 600; font-size: 14px; padding: 11px 20px; border-radius: 999px; border: 0; }
+  #a .tabbar { background: rgba(28,21,16,.88); border-top: 1px solid #33261b; } #a .tabbar a { color: #8f7a63; } #a .tabbar a.on { color: #e7b562; }
+  #b .tabbar { background: rgba(58,36,22,.95); } #b .tabbar a { color: #bfa47f; } #b .tabbar a.on { color: #fff3dc; }
+  #c .tabbar { background: rgba(255,250,242,.9); border-top: 1px solid #eadbc4; } #c .tabbar a { color: #9a8064; } #c .tabbar a.on { color: #b5761f; }
+  @container (max-width: 1000px) { #c .spectrum-wrap { display: none; } #c header, #b main, #a .hero { padding-left: 20px; padding-right: 20px; } #c main { margin-left: 16px; margin-right: 16px; } #a .content { padding: 0 20px; } #c .topnav { overflow-x: auto; } }
+</style>
+</head>
+<body>
+<div class="switcher">
+  <button data-t="a" class="active">A · Cave aux chandelles</button>
+  <button data-t="b">B · Pierre &amp; chêne</button>
+  <button data-t="c">C · Chai &amp; lumière</button>
+  <span class="sep"></span>
+  <button data-view="desktop" class="active">🖥 Ordinateur</button>
+  <button data-view="phone">📱 Téléphone</button>
+</div>
+
+<!-- A -->
+<section class="mock active" id="a">
+  <aside class="side">
+    <div style="font:italic 600 26px 'Cormorant Garamond';color:#e7b562;padding:0 14px 28px">Wine Cellar</div>
+    <nav class="nav" data-nav></nav>
+  </aside>
+  <main>
+    <div class="hero">
+      <div class="kicker">Samedi 3 octobre</div>
+      <h1>Bonsoir,<br>que débouche-t-on ce soir ?</h1>
+      <div style="display:flex;gap:12px;margin-top:24px"><button class="btn">+ Ajouter un vin</button></div>
+    </div>
+    <div class="content">
+      <div class="grid4" data-stats></div>
+      <div class="grid2">
+        <div class="card"><h2>À boire maintenant</h2><div data-list="drink"></div></div>
+        <div class="card"><h2>Ma cave en couleurs</h2><div data-spectrum="#a"></div></div>
+      </div>
+    </div>
+  </main>
+  <nav class="tabbar" data-tabbar></nav>
+</section>
+
+<!-- B -->
+<section class="mock" id="b">
+  <aside class="side">
+    <div style="font:400 26px 'DM Serif Display';color:#fff3dc;padding:0 14px 28px;position:relative;z-index:1">Wine <em style="color:#e3b36a">Cellar</em></div>
+    <nav class="nav" data-nav></nav>
+  </aside>
+  <main class="grain">
+    <div class="top">
+      <div>
+        <div class="lbl" style="margin-bottom:8px">Ma cave · 3 octobre 2026</div>
+        <h1>Bienvenue <em>dans votre cave</em></h1>
+        <p class="sub">148 bouteilles reposent dans 3 emplacements.</p>
+      </div>
+      <button class="btn">+ Ajouter un vin</button>
+    </div>
+    <div class="stack">
+      <div class="grid4" data-stats></div>
+      <div class="grid2">
+        <div class="card"><h2>À leur apogée</h2><div data-list="drink"></div></div>
+        <div class="card"><h2>Répartition</h2><div data-spectrum="#b"></div></div>
+      </div>
+    </div>
+  </main>
+  <nav class="tabbar" data-tabbar></nav>
+</section>
+
+<!-- C -->
+<section class="mock" id="c">
+  <header>
+    <div class="topnav">
+      <div style="font:italic 600 24px 'Cormorant Garamond';color:#f0b860;margin-right:16px">Wine Cellar</div>
+      <a class="on" href="#">Tableau de bord</a><a href="#">Vins</a><a href="#">Cave</a><a href="#">À boire</a><a href="#">Envies</a>
+      <a href="#" style="margin-left:auto">Paramètres</a>
+    </div>
+    <h1>Votre chai,<br><span>à la lumière.</span></h1>
+    <p class="sub">148 bouteilles · 12 prêtes à boire ce mois-ci</p>
+    <div class="spectrum-wrap"><div class="glasses" data-glasses="big"></div></div>
+  </header>
+  <main>
+    <div class="grid4" data-stats></div>
+    <div class="grid2">
+      <div class="card"><h2>À boire maintenant</h2><div data-list="drink"></div></div>
+      <div class="card"><h2>Dernières entrées</h2><div data-list="recent"></div></div>
+    </div>
+  </main>
+  <nav class="tabbar" data-tabbar></nav>
+</section>
+
+<script>
+  // Palette taken from the photos: pale gold whites -> amber -> rosé -> deep red.
+  const COLORS = [
+    { k: "Blanc", c: "#e9cf7a", n: 52 }, { k: "Jaune / oxydatif", c: "#d9a440", n: 18 },
+    { k: "Rosé", c: "#e59a7c", n: 9 }, { k: "Rouge léger", c: "#b8434a", n: 31 },
+    { k: "Rouge", c: "#7d1a28", n: 38 },
+  ];
+  const DRINK = [
+    ["Domaine des Tourelles", "Chardonnay · 2018", "#e9cf7a", "Apogée"],
+    ["Château Mirande", "Saint-Émilion · 2014", "#7d1a28", "À boire vite"],
+    ["Clos Saint-Léon", "Pinot noir · 2019", "#b8434a", "Apogée"],
+    ["Maison Verrière", "Crémant · 2020", "#f1e2a6", "Prêt"],
+  ];
+  const RECENT = [
+    ["Domaine Rollet", "Savagnin · 2017", "#d9a440", "+6"],
+    ["Mas des Oliviers", "Rosé · 2023", "#e59a7c", "+3"],
+    ["Château Lafleur-Bel", "Pomerol · 2016", "#7d1a28", "+2"],
+  ];
+  const STATS = [["148", "Bouteilles"], ["63", "Références"], ["4 820 €", "Valeur estimée"], ["12", "À boire ce mois"]];
+  const NAV = ["Tableau de bord", "Vins", "Cave", "À boire", "Envies", "Paramètres"];
+
+  function glass(color, h = 70) {
+    const w = h * 0.55;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 55 100" aria-hidden="true">
+      <path d="M8 4 H47 C49 30 45 48 27.5 52 C10 48 6 30 8 4 Z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>
+      <path d="M9 22 H46 C46 38 42 48 27.5 51 C13 48 9 38 9 22 Z" fill="${color}"/>
+      <path d="M14 8 C13 20 14 32 18 40" stroke="rgba(255,255,255,.6)" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <rect x="26.3" y="52" width="2.4" height="38" fill="rgba(255,255,255,.55)"/>
+      <ellipse cx="27.5" cy="92" rx="16" ry="3.5" fill="rgba(255,255,255,.45)"/></svg>`;
+  }
+
+  document.querySelectorAll("[data-nav]").forEach(n => n.innerHTML = NAV.map((l, i) => `<a href="#" class="${i ? "" : "on"}">${l}</a>`).join(""));
+  document.querySelectorAll("[data-stats]").forEach(n => n.innerHTML = STATS.map(([v, l]) => `<div class="card"><div class="lbl">${l}</div><div class="num">${v}</div></div>`).join(""));
+  document.querySelectorAll("[data-list]").forEach(n => {
+    const data = n.dataset.list === "drink" ? DRINK : RECENT;
+    n.innerHTML = data.map(([p, d, c, tag]) => `<div class="row"><span class="dot" style="background:${c}"></span>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">${p}</div><div class="lbl">${d}</div></div><span class="pill">${tag}</span></div>`).join("");
+  });
+  document.querySelectorAll("[data-spectrum]").forEach(n => {
+    const total = COLORS.reduce((s, x) => s + x.n, 0);
+    n.innerHTML = `<div class="glasses" style="justify-content:center;margin:6px 0 18px;padding:14px;border-radius:12px;background:radial-gradient(ellipse at 50% 120%,rgba(232,160,70,.45),transparent 70%),linear-gradient(180deg,#2a1c13,#3d2818)">${COLORS.map(x => glass(x.c, 80)).join("")}</div>
+      <div class="bar">${COLORS.map(x => `<span style="flex:${x.n};background:${x.c}"></span>`).join("")}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;font-size:13px">${COLORS.map(x => `<div style="display:flex;gap:8px;align-items:center"><span class="dot" style="background:${x.c}"></span>${x.k}<b style="margin-left:auto">${Math.round(x.n / total * 100)}%</b></div>`).join("")}</div>`;
+  });
+  document.querySelectorAll('[data-glasses="big"]').forEach(n => n.innerHTML = ["#f1e2a6", "#e9cf7a", "#d9a440", "#e59a7c", "#d06a5e", "#b8434a", "#962a36", "#7d1a28", "#5c1220"].map((c, i) => glass(c, 120 - i * 4)).join(""));
+
+  const ICON = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const TABS = [
+    ["Accueil", '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],
+    ["Vins", '<path d="M10 2h4v4l2 3v12a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9l2-3z"/><path d="M8 13h8"/>'],
+    ["Cave", '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'],
+    ["À boire", '<path d="M7 3h10c0 6-1.5 9-5 9s-5-3-5-9z"/><path d="M12 12v8M8 21h8"/>'],
+    ["Réglages", '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/>'],
+  ];
+  document.querySelectorAll("[data-tabbar]").forEach(n => n.innerHTML = TABS.map(([l, d], i) => `<a href="#" class="${i ? "" : "on"}">${ICON(d)}${l}</a>`).join(""));
+
+  document.querySelectorAll(".switcher button[data-t]").forEach(b => b.onclick = () => {
+    document.querySelectorAll(".switcher button[data-t], .mock").forEach(e => e.classList.remove("active"));
+    b.classList.add("active"); document.getElementById(b.dataset.t).classList.add("active");
+  });
+  document.querySelectorAll(".switcher button[data-view]").forEach(b => b.onclick = () => {
+    document.querySelectorAll(".switcher button[data-view]").forEach(e => e.classList.remove("active"));
+    b.classList.add("active"); document.body.classList.toggle("phone", b.dataset.view === "phone");
+  });
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { WINE_COLORS } from "@/lib/db/schema";
@@ -39,6 +39,34 @@ export type WishlistInput = z.infer<typeof wishlistInputSchema>;
 
 export function listWishlist(userId: string) {
   return getDb().select().from(wishlist).where(eq(wishlist.userId, userId)).orderBy(desc(wishlist.createdAt)).all();
+}
+
+/** Wishlist entries tasted elsewhere (rating, date or place filled), for the "Already tasted" search. */
+export function listTastedWishlist(userId: string, f: { q?: string; color?: string; minRating?: number; sort?: string } = {}) {
+  const conditions = [
+    eq(wishlist.userId, userId),
+    or(isNotNull(wishlist.rating), isNotNull(wishlist.tastedOn), isNotNull(wishlist.tastedWhere))!,
+  ];
+  if (f.q) {
+    const term = `%${f.q.trim()}%`;
+    conditions.push(or(like(wishlist.producer, term), like(wishlist.name, term), like(wishlist.appellation, term))!);
+  }
+  if (f.color && (WINE_COLORS as readonly string[]).includes(f.color)) {
+    conditions.push(eq(wishlist.color, f.color as (typeof WINE_COLORS)[number]));
+  }
+  if (f.minRating) conditions.push(gte(wishlist.rating, f.minRating));
+  const order =
+    f.sort === "rating"
+      ? [sql`${wishlist.rating} is null`, desc(wishlist.rating)]
+      : f.sort === "producer"
+        ? [asc(wishlist.producer)]
+        : [desc(sql`coalesce(${wishlist.tastedOn}, ${wishlist.createdAt})`)];
+  return getDb()
+    .select()
+    .from(wishlist)
+    .where(and(...conditions))
+    .orderBy(...order)
+    .all();
 }
 
 export function getWishlistItem(userId: string, id: string) {

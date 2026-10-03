@@ -91,7 +91,7 @@ export function WishlistBoard({
               <WishlistForm item={item} catalogSize={0} barcodeEnabled={false} onDone={() => setEditing(null)} />
             </li>
           ) : (
-            <li key={item.id}>
+            <li key={item.id} id={`wish-${item.id}`} className="scroll-mt-20">
               <Card className="flex h-full flex-col gap-3 p-4">
                 <div className="flex items-start gap-3">
                   <div className="relative flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-2">

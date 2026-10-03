@@ -1,13 +1,22 @@
 "use client";
 
 import clsx from "clsx";
-import { Camera, Minus, Plus, X } from "lucide-react";
-import { useActionState, useState } from "react";
+import { Camera, Minus, Plus, Wand2, X } from "lucide-react";
+import { useActionState, useRef, useState } from "react";
 import { Alert, Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
-import type { Wine } from "@/lib/db/schema";
+import { estimateWindow } from "@/lib/aging";
+import type { Wine, WineColor } from "@/lib/db/schema";
+import { PAIRING_KEYS } from "@/lib/pairings";
 import { WINE_COLOR_ORDER, WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { useI18n } from "@/i18n/client";
+import type { MessageKey } from "@/i18n/config";
 import { saveWine } from "./actions";
+import { AutocompleteInput } from "./autocomplete-input";
+import { countryName, QuickFill, type FillData } from "./quick-fill";
+
+
+
+const WINDOW_FIELDS = ["drinkFrom", "peakFrom", "peakUntil", "drinkUntil"] as const;
 
 const BOTTLE_SIZES = [375, 500, 750, 1500, 3000, 6000];
 
@@ -24,9 +33,43 @@ async function resizeImage(file: File, maxSide = 1600): Promise<Blob> {
   );
 }
 
-export function WineForm({ wine }: { wine?: Wine }) {
-  const { t } = useI18n();
+export function WineForm({ wine, catalogSize = 0, barcodeEnabled = false }: { wine?: Wine; catalogSize?: number; barcodeEnabled?: boolean }) {
+  const { t, locale } = useI18n();
   const [state, formAction, pending] = useActionState(saveWine.bind(null, wine?.id ?? null), undefined);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [pairings, setPairings] = useState<string[]>(wine?.pairings?.split(",").filter(Boolean) ?? []);
+  const [barcode, setBarcode] = useState(wine?.barcode ?? "");
+  const [windowNote, setWindowNote] = useState<MessageKey | null>(null);
+
+  const field = (name: string) => formRef.current?.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | null;
+  const read = (name: string) => field(name)?.value.trim() ?? "";
+  const write = (name: string, value: string | number | undefined, onlyIfEmpty = false) => {
+    const el = field(name);
+    if (!el || value == null || value === "" || (onlyIfEmpty && el.value)) return;
+    el.value = String(value);
+  };
+  const currentColor = () => (formRef.current?.querySelector<HTMLInputElement>('input[name="color"]:checked')?.value ?? "red") as WineColor;
+
+  function estimate(silent = false) {
+    const vintage = Number(read("vintage")) || null;
+    const result = estimateWindow({ color: currentColor(), vintage, appellation: read("appellation"), region: read("region"), name: read("name") });
+    if (!result) return !silent && setWindowNote("quickFill.estimateNeedsVintage");
+    for (const k of WINDOW_FIELDS) write(k, result[k]);
+    setWindowNote("quickFill.estimateHint");
+  }
+
+  function fill(d: FillData) {
+    for (const k of ["producer", "name", "appellation", "region", "country", "grapes", "alcohol"] as const) write(k, d[k]);
+    write("vintage", d.vintage, true);
+    write("bottleSizeMl", d.bottleSizeMl);
+    if (d.color) {
+      const radio = formRef.current?.querySelector<HTMLInputElement>(`input[name="color"][value="${d.color}"]`);
+      if (radio) radio.checked = true;
+    }
+    if (d.pairings) setPairings(d.pairings.split(","));
+    if (d.barcode) setBarcode(d.barcode);
+    if (WINDOW_FIELDS.every((k) => !read(k)) && read("vintage")) estimate(true);
+  }
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(wine?.imageFile ? `/api/uploads/${wine.imageFile}` : null);
   const [removePhoto, setRemovePhoto] = useState(false);
@@ -51,11 +94,18 @@ export function WineForm({ wine }: { wine?: Wine }) {
   const v = (k: keyof Wine) => (wine?.[k] ?? "") as string | number;
 
   return (
-    <form action={submit} className="grid gap-5 lg:grid-cols-[280px_1fr]">
+    <form ref={formRef} action={submit} className="grid gap-5 lg:grid-cols-[280px_1fr]">
+      <input type="hidden" name="barcode" value={barcode} />
+      <input type="hidden" name="pairings" value={pairings.join(",")} />
+      {!wine && catalogSize > 0 && (
+        <div className="lg:col-span-2">
+          <QuickFill catalogSize={catalogSize} barcodeEnabled={barcodeEnabled} onFill={fill} />
+        </div>
+      )}
       {/* Photo */}
       <Card className="h-fit">
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">{t("wines.photo")}</p>
-        <label className="group relative flex aspect-[3/4] cursor-pointer items-center justify-center overflow-hidden rounded border-2 border-dashed border-border bg-surface-2 hover:border-accent">
+        <label className="group relative flex aspect-[4/3] cursor-pointer lg:aspect-[3/4] items-center justify-center overflow-hidden rounded border-2 border-dashed border-border bg-surface-2 hover:border-accent">
           {preview && !removePhoto ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={preview} alt="" className="size-full object-cover" />
@@ -101,7 +151,17 @@ export function WineForm({ wine }: { wine?: Wine }) {
               <Input id="name" name="name" defaultValue={v("name")} />
             </Field>
             <Field label={t("wines.vintage")} htmlFor="vintage">
-              <Input id="vintage" name="vintage" type="number" inputMode="numeric" min={1800} max={2200} placeholder={t("wines.nonVintage")} defaultValue={v("vintage")} />
+              <Input
+                id="vintage"
+                name="vintage"
+                type="number"
+                inputMode="numeric"
+                min={1800}
+                max={2200}
+                placeholder={t("wines.nonVintage")}
+                defaultValue={v("vintage")}
+                onBlur={() => WINDOW_FIELDS.every((k) => !read(k)) && read("appellation") && estimate(true)}
+              />
             </Field>
           </div>
 
@@ -131,10 +191,36 @@ export function WineForm({ wine }: { wine?: Wine }) {
               <Input id="region" name="region" defaultValue={v("region")} />
             </Field>
             <Field label={t("wines.appellation")} htmlFor="appellation">
-              <Input id="appellation" name="appellation" defaultValue={v("appellation")} />
+              <AutocompleteInput<{ name: string; region: string | null; country: string | null; sign: string | null }>
+                id="appellation"
+                name="appellation"
+                defaultValue={v("appellation")}
+                url="/api/catalog/appellations?q="
+                getLabel={(a) => a.name}
+                renderItem={(a) => (
+                  <>
+                    <span className="block truncate text-sm font-semibold">{a.name}</span>
+                    <span className="block truncate text-xs text-muted">
+                      {[a.sign, a.region, countryName(a.country, locale)].filter(Boolean).join(" · ")}
+                    </span>
+                  </>
+                )}
+                onPick={(a) => {
+                  write("region", a.region ?? undefined, true);
+                  write("country", countryName(a.country, locale), true);
+                }}
+              />
             </Field>
             <Field label={t("wines.grapes")} htmlFor="grapes">
-              <Input id="grapes" name="grapes" defaultValue={v("grapes")} />
+              <AutocompleteInput<string>
+                id="grapes"
+                name="grapes"
+                defaultValue={v("grapes")}
+                url="/api/catalog/appellations?kind=grapes&q="
+                multiple
+                getLabel={(g) => g}
+                renderItem={(g) => <span className="text-sm">{g}</span>}
+              />
             </Field>
             <Field label={t("wines.alcohol")} htmlFor="alcohol">
               <Input id="alcohol" name="alcohol" inputMode="decimal" defaultValue={v("alcohol")} />
@@ -170,10 +256,15 @@ export function WineForm({ wine }: { wine?: Wine }) {
         </Card>
 
         <Card>
-          <h2 className="mb-1 font-serif text-2xl">{t("wines.sectionWindow")}</h2>
-          <p className="mb-4 text-sm text-muted">{t("wines.windowHint")}</p>
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <h2 className="font-serif text-2xl">{t("wines.sectionWindow")}</h2>
+            <Button type="button" variant="secondary" onClick={() => estimate()} className="shrink-0">
+              <Wand2 className="size-4" aria-hidden /> {t("quickFill.estimate")}
+            </Button>
+          </div>
+          <p className="mb-4 text-sm text-muted">{windowNote ? t(windowNote) : t("wines.windowHint")}</p>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {(["drinkFrom", "peakFrom", "peakUntil", "drinkUntil"] as const).map((k) => (
+            {WINDOW_FIELDS.map((k) => (
               <Field key={k} label={t(`wines.${k}`)} htmlFor={k}>
                 <Input id={k} name={k} type="number" inputMode="numeric" min={1800} max={2200} defaultValue={v(k)} aria-invalid={!!err(k)} />
               </Field>
@@ -186,6 +277,33 @@ export function WineForm({ wine }: { wine?: Wine }) {
           <Field label={t("wines.notes")} htmlFor="notes">
             <Textarea id="notes" name="notes" rows={4} defaultValue={v("notes")} />
           </Field>
+          <fieldset className="mt-4">
+            <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{t("quickFill.pairings")}</legend>
+            <div className="flex flex-wrap gap-1.5">
+              {PAIRING_KEYS.map((k) => {
+                const on = pairings.includes(k);
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setPairings(on ? pairings.filter((p) => p !== k) : [...pairings, k])}
+                    className={clsx(
+                      "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                      on ? "border-accent bg-accent-soft font-semibold text-[#8a5a1c]" : "border-border bg-surface text-muted hover:border-accent",
+                    )}
+                  >
+                    {t(`pairings.${k}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+          {barcode && (
+            <p className="mt-4 text-xs text-muted">
+              {t("quickFill.barcode")} : <span className="font-mono">{barcode}</span>
+            </p>
+          )}
         </Card>
 
         {state?.error && <Alert>{t(state.error)}</Alert>}

@@ -39,6 +39,19 @@ export const wineInputSchema = z.object({
   peakUntil: year,
   drinkUntil: year,
   notes: optionalText,
+  barcode: z
+    .string()
+    .trim()
+    .regex(/^\d{8,14}$/)
+    .or(z.literal(""))
+    .transform((v) => v || null)
+    .nullish(),
+  pairings: z
+    .string()
+    .trim()
+    .regex(/^[a-zA-Z,]*$/)
+    .transform((v) => v || null)
+    .nullish(),
 });
 export type WineInput = z.infer<typeof wineInputSchema>;
 

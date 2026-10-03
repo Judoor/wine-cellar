@@ -1,0 +1,231 @@
+// French wine region resolution for INAO appellations.
+
+/** Department (as written in INAO files) → wine region. */
+export const DEPARTMENT_REGION = {
+  GIRONDE: "Bordeaux",
+  "COTE-D'OR": "Bourgogne",
+  YONNE: "Bourgogne",
+  "SAONE-ET-LOIRE": "Bourgogne",
+  RHONE: "Beaujolais",
+  JURA: "Jura",
+  DOUBS: "Jura",
+  SAVOIE: "Savoie",
+  "HAUTE-SAVOIE": "Savoie",
+  ISERE: "Savoie",
+  AIN: "Savoie",
+  MARNE: "Champagne",
+  AUBE: "Champagne",
+  AISNE: "Champagne",
+  "SEINE-ET-MARNE": "Champagne",
+  "HAUTE-MARNE": "Champagne",
+  "BAS-RHIN": "Alsace",
+  "HAUT-RHIN": "Alsace",
+  MOSELLE: "Lorraine",
+  MEUSE: "Lorraine",
+  "MEURTHE-ET-MOSELLE": "Lorraine",
+  VOSGES: "Lorraine",
+  "LOIRE-ATLANTIQUE": "Loire",
+  "MAINE-ET-LOIRE": "Loire",
+  "INDRE-ET-LOIRE": "Loire",
+  "LOIR-ET-CHER": "Loire",
+  CHER: "Loire",
+  NIEVRE: "Loire",
+  LOIRET: "Loire",
+  VIENNE: "Loire",
+  "DEUX-SEVRES": "Loire",
+  VENDEE: "Loire",
+  INDRE: "Loire",
+  SARTHE: "Loire",
+  ALLIER: "Loire",
+  "PUY-DE-DOME": "Loire",
+  LOIRE: "Loire",
+  DROME: "Rhône",
+  ARDECHE: "Rhône",
+  VAUCLUSE: "Rhône",
+  GARD: "Languedoc-Roussillon",
+  HERAULT: "Languedoc-Roussillon",
+  AUDE: "Languedoc-Roussillon",
+  "PYRENEES-ORIENTALES": "Languedoc-Roussillon",
+  VAR: "Provence",
+  "BOUCHES-DU-RHONE": "Provence",
+  "ALPES-MARITIMES": "Provence",
+  "ALPES-DE-HAUTE-PROVENCE": "Provence",
+  "HAUTES-ALPES": "Provence",
+  "CORSE-DU-SUD": "Corse",
+  "HAUTE-CORSE": "Corse",
+  DORDOGNE: "Sud-Ouest",
+  "LOT-ET-GARONNE": "Sud-Ouest",
+  LOT: "Sud-Ouest",
+  TARN: "Sud-Ouest",
+  "TARN-ET-GARONNE": "Sud-Ouest",
+  GERS: "Sud-Ouest",
+  LANDES: "Sud-Ouest",
+  "PYRENEES-ATLANTIQUES": "Sud-Ouest",
+  "HAUTES-PYRENEES": "Sud-Ouest",
+  "HAUTE-GARONNE": "Sud-Ouest",
+  AVEYRON: "Sud-Ouest",
+  CORREZE: "Sud-Ouest",
+  CANTAL: "Sud-Ouest",
+  CHARENTE: "Charentes",
+  "CHARENTE-MARITIME": "Charentes",
+  CALVADOS: "Normandie",
+  MANCHE: "Normandie",
+  ORNE: "Normandie",
+};
+
+/** Name-based overrides (checked first), for appellations straddling department borders. */
+export const NAME_OVERRIDES = [
+  [/Côte Rôtie|Condrieu|Château-Grillet|Saint-Joseph|Hermitage|Cornas|Saint-Péray|Collines Rhodaniennes|Côtes du Rhône|Tavel|Lirac|Costières|Duché d'Uzès|Clairette de Die|Coteaux de Die|Crémant de Die|Châtillon-en-Diois|Grignan|Vinsobres|Rasteau|Gigondas|Vacqueyras|Beaumes de Venise|Châteauneuf|Ventoux|Luberon/i, "Rhône"],
+  [/Beaujolais|Saint-Amour|Moulin-à-Vent|Juliénas|Chénas|Fleurie|Chiroubles|Morgon|Régnié|Brouilly|Coteaux du Lyonnais/i, "Beaujolais"],
+  [/Bourgogne|Tannay|Auxois|Sainte-Marie-la-Blanche|^Yonne|^Saône-et-Loire|Coteaux Bourguignons|Mâcon/i, "Bourgogne"],
+  [/Bugey|Coteaux de l'Ain|Allobroges|^Isère|Roussette|Seyssel|Savoie/i, "Savoie"],
+  [/Val de Loire|Urfé|Côte Roannaise|Forez|Puy-de-Dôme|Côtes d'Auvergne|Saint-Pourçain/i, "Loire"],
+  [/Pays d'Oc|^Aude|^Hérault|Pays d'Hérault|^Gard\b|Cévennes|Côtes Catalanes|Saint-Guilhem|Côtes de Thau|Côtes de Thongue|Terres du Midi|Cité de Carcassonne|Coteaux d'Ensérune|Coteaux de Béziers|Coteaux de Narbonne|Coteaux de Peyriac|Haute Vallée|Vallée du Paradis|Vallée du Torgan|Vicomté d'Aumelas|Cathare|Pont du Gard|Sable de Camargue|Pays des Bouches-du-Rhône Terre de Camargue/i, "Languedoc-Roussillon"],
+  [/Méditerranée|Méditérranée|^Var\b|Maures|Alpilles|Bouches-du-Rhône|Alpes-de-Haute-Provence|Alpes-Maritimes|Hautes-Alpes|Mont Caume|Coteaux des Baronnies|Provence|Cassis|Bandol/i, "Provence"],
+  [/^Vaucluse|^Drôme|^Ardèche/i, "Rhône"],
+  [/Côtes de Gascogne|Comté Tolosan|Périgord|^Lot\b|Côtes du Lot|^Landes|^Gers|Côtes du Tarn|^Aveyron|Agenais|Thézac|Ariège|Pays de Brive|Corrèze|Haute-Vienne|Coteaux de Glanes|Atlantique/i, "Sud-Ouest"],
+  [/Charentais/i, "Charentes"],
+  [/Franche-Comté/i, "Jura"],
+  [/Île-de-France/i, "Île-de-France"],
+  [/Ile de Beauté|Corse/i, "Corse"],
+  [/Côtes de Meuse|^Moselle|Coteaux de Coiffy|^Haute-Marne/i, "Lorraine"],
+  [/^Calvados/i, "Normandie"],
+];
+
+/** Non-wine products sharing the AOP/IGP register (matched on the area name). */
+export const FOOD_WORDS =
+  /(?<!\p{L})(fromage|beurre|crème|miel|huile|olives?|volailles?|poulet|poularde|chapon|dinde|pintade|pintadeau|oie|agneau|bœuf|boeuf|génisse|ternera|taureau|porc|jambon|lentilles?|noix|piment|ail|oignon|échalote|echalote|haricot|mogette|coco|riz|sel|foin|canard|saucisses?|saucisson|coppa|lonzo|pancetta|figatelli|bulagna|pâté|rillettes|moules|huîtres?|bulot|lait|tomme|tome|bleu|emmental|gruyère|raclette|chasselas|figues?|châtaignes?|marrons?|pruneaux?|kiwi|melon|fraises?|clémentine|citron|pomelo|farine|pain|brioche|gâche|cidre|poiré|pommeau|eau-de-vie|rhum|genièvre|mirabelle|whisky|vinaigre|noisettes?|asperges?|carottes?|endives?|abricots?|pêches?|cerises?|truffes?|safran|lavande|tilleul|nougat|confit|anchois|sardines?|thon|coquilles?|crevettes?|caviar|œufs|oeufs|vanille|moutarde|choucroute|pâtes|raviole|mâche|lingot|artichaut|épeautre|lucques|prés-salés|bois|pommes?|poires?|reblochon|chevrotin|munster|morbier|picodon|pélardon|brousse|brocciu)(?!\p{L})/iu;
+
+export const FOOD_NAMES = new Set([
+  "Abondance", "Banon", "Beaufort", "Brie de Meaux", "Brie de Melun", "Brillat-Savarin", "Camembert de Normandie",
+  "Cancoillotte", "Cantal", "Chabichou du Poitou", "Chaource", "Chavignol", "Comté", "Epoisses", "Fourme d'Ambert",
+  "Fourme de Montbrison", "Laguiole", "Langres", "Livarot", "Maroilles", "Mont d'Or ou Vacherin du Haut-Doubs",
+  "Mothais sur feuille", "Neufchâtel", "Ossau-Iraty", "Pont-l'Évêque", "Pouligny-Saint-Pierre", "Rigotte de Condrieu",
+  "Rocamadour", "Roquefort", "Saint-Marcellin", "Saint-Nectaire", "Sainte-Maure de Touraine", "Salers",
+  "Selles-sur-Cher", "Soumaintrain", "Valençay", "Charolais", "Charolais de Bourgogne", "Mâconnais", "Maine-Anjou",
+  "Barèges-Gavarnie", "Fin Gras du Mézenc", "Kintoa", "Domfront", "Pays d'Auge", "Pays d'Auge Cambremer",
+  "Béa du Roussillon", "Muscat du Ventoux", "Coco de Paimpol", "Calvados Pays d'Auge", "Calvados Domfrontais",
+  "Bergamotes de Nancy", "Boudin blanc de Rethel", "Mirabelles de Lorraine", "Pérail", "Poireaux de Créances",
+  "Rosée des Pyrénées catalanes", "Veau d'Aveyron et du Ségala", "Veau du Limousin", "Cornouaille",
+]);
+
+/** Regions for IGP areas the rules above can't place. */
+export const EXTRA_REGIONS = {
+  "Comtés Rhodaniens": "Rhône",
+  "Côte Vermeille": "Languedoc-Roussillon",
+  "Coteaux du Cher et de l'Arnon": "Loire",
+  "Côtes de la Charité": "Loire",
+  Lavilledieu: "Sud-Ouest",
+  Lorraine: "Lorraine",
+};
+
+/** X-Wines French names that differ from INAO's. */
+export const XWINES_FR_ALIASES = {
+  "Castillon-Côtes de Bordeaux": "Côtes de Bordeaux Castillon",
+  "Blaye-Côtes de Bordeaux": "Côtes de Bordeaux Blaye",
+  "Cadillac-Côtes de Bordeaux": "Côtes de Bordeaux Cadillac",
+  "Francs-Côtes de Bordeaux": "Côtes de Bordeaux Francs",
+  "Moulis-en-Médoc": "Moulis",
+  "Côte-Rôtie": "Côte Rôtie",
+};
+
+export function regionFor(name, department) {
+  if (EXTRA_REGIONS[name]) return EXTRA_REGIONS[name];
+  for (const [re, region] of NAME_OVERRIDES) if (re.test(name)) return region;
+  return (department && DEPARTMENT_REGION[department]) || null;
+}
+
+/** X-Wines French "RegionName" values that are regions rather than appellations. */
+export const XWINES_FR_REGIONS = {
+  Bourgogne: "Bourgogne",
+  Burgundy: "Bourgogne",
+  "Côte de Beaune": "Bourgogne",
+  "Côte de Nuits": "Bourgogne",
+  "Côte Chalonnaise": "Bourgogne",
+  Champagne: "Champagne",
+  Alsace: "Alsace",
+  Bordeaux: "Bordeaux",
+  "Languedoc-Roussillon": "Languedoc-Roussillon",
+  Languedoc: "Languedoc-Roussillon",
+  Roussillon: "Languedoc-Roussillon",
+  "Southern Rhône": "Rhône",
+  "Northern Rhône": "Rhône",
+  "Rhone Valley": "Rhône",
+  "Loire Valley": "Loire",
+  Provence: "Provence",
+  Beaujolais: "Beaujolais",
+  "South West France": "Sud-Ouest",
+  "Sud-Ouest": "Sud-Ouest",
+  Jura: "Jura",
+  Savoie: "Savoie",
+  Corse: "Corse",
+  Corsica: "Corse",
+  Libournais: "Bordeaux",
+  Guyenne: "Bordeaux",
+  "Upper Loire": "Loire",
+  "Pays Nantais": "Loire",
+  Gascogne: "Sud-Ouest",
+  "Mâconnais": "Bourgogne",
+};
+
+/** X-Wines French appellations missing from INAO (old names, English labels) → region. */
+export const XWINES_FR_APPELLATION_REGIONS = {
+  "Côtes de Bourg": "Bordeaux",
+  "Premières Côtes de Blaye": "Bordeaux",
+  "Sainte-Foy-Bordeaux": "Bordeaux",
+  "Rosé d'Anjou": "Loire",
+  "Cabernet d'Anjou": "Loire",
+  "Cabernet de Saumur": "Loire",
+  "Middle Loire": "Loire",
+  "Lower Loire": "Loire",
+  "Pouilly-Sur-Loire": "Loire",
+  "Blanquette de Limoux": "Languedoc-Roussillon",
+  "Hérault": "Languedoc-Roussillon",
+  Montpeyroux: "Languedoc-Roussillon",
+  "Saint-Saturnin": "Languedoc-Roussillon",
+  "Saint-Drézéry": "Languedoc-Roussillon",
+  "Sommières": "Languedoc-Roussillon",
+  "Val de Montferrand": "Languedoc-Roussillon",
+  "Muscat de St. Jean de Minervois": "Languedoc-Roussillon",
+  "Alsace Grand Cru": "Alsace",
+  "Clos Vougeot Grand Cru": "Bourgogne",
+  "Coteaux de Pierrevert": "Provence",
+  "Bouches-du-Rhone": "Provence",
+  "Vins des Allobroges": "Savoie",
+  "Pyrenées": "Sud-Ouest",
+};
+
+/** X-Wines food pairings → app pairing keys. */
+export const PAIRINGS = {
+  Beef: "beef", Barbecue: "beef", Grilled: "beef", Roast: "beef", Meat: "beef",
+  Lamb: "lamb",
+  Veal: "veal",
+  Pork: "pork",
+  Poultry: "poultry", Chicken: "poultry", Duck: "poultry", "Curry Chicken": "poultry",
+  "Game Meat": "game",
+  "Cured Meat": "curedMeat", Ham: "curedMeat", "Cold Cuts": "curedMeat",
+  "Rich Fish": "richFish",
+  "Lean Fish": "leanFish", Fish: "leanFish", Codfish: "leanFish", Sashimi: "leanFish", Sushi: "leanFish",
+  Shellfish: "shellfish", Seafood: "shellfish",
+  Pasta: "pasta", Pizza: "pasta", Lasagna: "pasta", Tagliatelle: "pasta", Risotto: "pasta", "Tomato Dishes": "pasta", Paella: "pasta",
+  "Spicy Food": "spicy", "Asian Food": "spicy", Yakissoba: "spicy",
+  Vegetarian: "vegetarian", Salad: "vegetarian", Beans: "vegetarian", "Eggplant Parmigiana": "vegetarian", "Baked Potato": "vegetarian", "French Fries": "vegetarian", "Light Stews": "vegetarian",
+  Mushrooms: "mushrooms", Chestnut: "mushrooms",
+  "Soft Cheese": "softCheese", "Mild Cheese": "softCheese", Cream: "softCheese",
+  "Hard Cheese": "hardCheese", Cheese: "hardCheese",
+  "Maturated Cheese": "agedCheese", "Medium-cured Cheese": "agedCheese",
+  "Blue Cheese": "blueCheese",
+  "Goat Cheese": "goatCheese",
+  Appetizer: "appetizer", Snack: "appetizer", Aperitif: "appetizer",
+  "Sweet Dessert": "dessert", Dessert: "dessert", Cake: "dessert", Cookies: "dessert", Chocolate: "dessert", "Soufflé": "dessert",
+  "Fruit Dessert": "fruitDessert", Fruit: "fruitDessert", "Citric Dessert": "fruitDessert", "Dried Fruits": "fruitDessert", "Spiced Fruit Cake": "fruitDessert",
+};
+
+export const XWINES_COLORS = {
+  Red: "red",
+  White: "white",
+  "Rosé": "rose",
+  Sparkling: "sparkling",
+  Dessert: "sweet",
+  "Dessert/Port": "fortified",
+};

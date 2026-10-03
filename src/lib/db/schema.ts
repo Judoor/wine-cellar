@@ -109,9 +109,12 @@ export const wines = sqliteTable(
     drinkUntil: integer("drink_until"),
     notes: text("notes"),
     imageFile: text("image_file"),
+    barcode: text("barcode"),
+    // Comma-separated pairing keys (see messages "pairings").
+    pairings: text("pairings"),
     createdAt: createdAt(),
   },
-  (t) => [index("wines_user_idx").on(t.userId)],
+  (t) => [index("wines_user_idx").on(t.userId), index("wines_barcode_idx").on(t.userId, t.barcode)],
 );
 
 /** One row per physical bottle currently in stock. */

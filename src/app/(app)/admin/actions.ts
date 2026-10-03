@@ -12,6 +12,12 @@ export async function setRegistrationOpen(open: boolean) {
   revalidatePath("/admin");
 }
 
+export async function setExternalLookups(enabled: boolean) {
+  await requireAdmin();
+  setSetting("external_lookups", String(enabled));
+  revalidatePath("/admin");
+}
+
 export async function setUserRole(userId: string, role: "admin" | "user") {
   const admin = await requireAdmin();
   if (userId === admin.id) return; // Admins can't demote themselves (avoids locking everyone out).

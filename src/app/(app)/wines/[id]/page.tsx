@@ -1,7 +1,8 @@
 import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Pencil } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { buttonClass, Card, SectionTitle } from "@/components/ui";
+import { buttonClass, Card, Pill, SectionTitle } from "@/components/ui";
+import { parsePairings } from "@/lib/pairings";
 import { WindowBadge } from "@/components/window-badge";
 import { requireUser } from "@/lib/auth";
 import { windowStatus } from "@/lib/drinking-window";
@@ -113,6 +114,16 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
                   </div>
                 ))}
             </dl>
+            {wine.pairings && (
+              <div className="mt-4">
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">{t("quickFill.pairings")}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {parsePairings(wine.pairings).map((p) => (
+                      <Pill key={p}>{t(`pairings.${p}`)}</Pill>
+                    ))}
+                </div>
+              </div>
+            )}
             {wine.notes && <p className="mt-4 whitespace-pre-line text-sm leading-relaxed">{wine.notes}</p>}
           </Card>
 

@@ -4,7 +4,8 @@ import { requireAdmin } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
 import { getLocale, getT } from "@/i18n/server";
-import { RegistrationToggle, UserActions } from "./controls";
+import { externalLookupsEnabled } from "@/lib/services/barcode";
+import { ExternalLookupsToggle, RegistrationToggle, UserActions } from "./controls";
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
@@ -20,6 +21,12 @@ export default async function AdminPage() {
         <Card>
           <h2 className="mb-3 font-serif text-xl font-semibold">{t("admin.registration")}</h2>
           <RegistrationToggle initial={!envLocked && getSetting("registration_open") !== "false"} disabled={envLocked} />
+        </Card>
+
+        <Card>
+          <h2 className="mb-1 font-serif text-xl font-semibold">{t("admin.services")}</h2>
+          <p className="mb-3 text-sm text-muted">{t("admin.externalLookupsHint")}</p>
+          <ExternalLookupsToggle initial={externalLookupsEnabled()} disabled={process.env.DISABLE_EXTERNAL_LOOKUPS === "true"} />
         </Card>
 
         <Card className="overflow-x-auto p-0">

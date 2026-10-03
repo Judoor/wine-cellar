@@ -3,9 +3,20 @@
 import { useTransition } from "react";
 import { Button } from "@/components/ui";
 import { useI18n } from "@/i18n/client";
-import { deleteUser, setRegistrationOpen, setUserRole } from "./actions";
+import type { MessageKey } from "@/i18n/config";
+import { deleteUser, setExternalLookups, setRegistrationOpen, setUserRole } from "./actions";
 
-export function RegistrationToggle({ initial, disabled }: { initial: boolean; disabled?: boolean }) {
+function SettingToggle({
+  initial,
+  disabled,
+  label,
+  onToggle,
+}: {
+  initial: boolean;
+  disabled?: boolean;
+  label: MessageKey;
+  onToggle: (on: boolean) => Promise<void>;
+}) {
   const { t } = useI18n();
   const [pending, startTransition] = useTransition();
   return (
@@ -15,14 +26,22 @@ export function RegistrationToggle({ initial, disabled }: { initial: boolean; di
         defaultChecked={initial}
         disabled={disabled || pending}
         onChange={(e) => {
-          const open = e.target.checked;
-          startTransition(() => setRegistrationOpen(open));
+          const on = e.target.checked;
+          startTransition(() => onToggle(on));
         }}
         className="size-4 accent-primary"
       />
-      {t("admin.registrationOpen")}
+      {t(label)}
     </label>
   );
+}
+
+export function RegistrationToggle({ initial, disabled }: { initial: boolean; disabled?: boolean }) {
+  return <SettingToggle initial={initial} disabled={disabled} label="admin.registrationOpen" onToggle={setRegistrationOpen} />;
+}
+
+export function ExternalLookupsToggle({ initial, disabled }: { initial: boolean; disabled?: boolean }) {
+  return <SettingToggle initial={initial} disabled={disabled} label="admin.externalLookups" onToggle={setExternalLookups} />;
 }
 
 export function UserActions({ userId, role }: { userId: string; role: "admin" | "user" }) {

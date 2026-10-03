@@ -45,7 +45,7 @@ export function WineFilters({ regions }: { regions: string[] }) {
           className="pl-9"
         />
       </div>
-      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
+      <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 md:flex md:flex-wrap md:items-center">
         <Select value={params.get("color") ?? ""} onChange={(e) => update("color", e.target.value)} className="md:w-48">
           <option value="">{t("wines.allColors")}</option>
           {WINE_COLOR_ORDER.map((c) => (

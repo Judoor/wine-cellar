@@ -49,7 +49,7 @@ export default async function WinesPage(props: PageProps<"/wines">) {
           <p className="text-muted">{isFiltered ? t("wines.noResults") : t("wines.empty")}</p>
         </Card>
       ) : (
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {wines.map((w) => {
             const status = windowStatus(w);
             return (

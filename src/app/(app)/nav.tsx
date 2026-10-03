@@ -29,7 +29,19 @@ function useIsActive() {
   return (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 }
 
-export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
+type Badges = Partial<Record<string, number>>;
+
+/** Small count bubble (e.g. wines to drink urgently). */
+function Badge({ count, className }: { count?: number; className?: string }) {
+  if (!count) return null;
+  return (
+    <span className={clsx("flex min-w-5 items-center justify-center rounded-full bg-[#d9863a] px-1.5 text-[11px] leading-5 font-bold text-white", className)}>
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+export function SidebarNav({ isAdmin, badges = {} }: { isAdmin: boolean; badges?: Badges }) {
   const { t } = useI18n();
   const isActive = useIsActive();
   return (
@@ -47,13 +59,14 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
           >
             <Icon className="size-4" aria-hidden />
             {t(label)}
+            <Badge count={badges[href]} className="ml-auto" />
           </Link>
         ))}
     </nav>
   );
 }
 
-export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
+export function MobileNav({ isAdmin, badges = {} }: { isAdmin: boolean; badges?: Badges }) {
   const { t } = useI18n();
   const isActive = useIsActive();
   return (
@@ -69,7 +82,10 @@ export function MobileNav({ isAdmin }: { isAdmin: boolean }) {
               isActive(href) ? "text-[#fff3dc]" : "text-[#bfa47f]",
             )}
           >
-            <Icon className="size-[22px]" aria-hidden />
+            <span className="relative">
+              <Icon className="size-[22px]" aria-hidden />
+              <Badge count={badges[href]} className="absolute -top-1.5 -right-3" />
+            </span>
             <span className="max-w-full truncate">{t(mobileLabel ?? label)}</span>
           </Link>
         ))}

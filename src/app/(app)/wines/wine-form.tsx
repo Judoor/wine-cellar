@@ -33,7 +33,20 @@ async function resizeImage(file: File, maxSide = 1600): Promise<Blob> {
   );
 }
 
-export function WineForm({ wine, catalogSize = 0, barcodeEnabled = false }: { wine?: Wine; catalogSize?: number; barcodeEnabled?: boolean }) {
+export function WineForm({
+  wine,
+  initial,
+  wishlistId,
+  catalogSize = 0,
+  barcodeEnabled = false,
+}: {
+  wine?: Wine;
+  /** Prefilled values for a new wine (e.g. from a wishlist entry). */
+  initial?: Partial<Wine>;
+  wishlistId?: string;
+  catalogSize?: number;
+  barcodeEnabled?: boolean;
+}) {
   const { t, locale } = useI18n();
   const [state, formAction, pending] = useActionState(saveWine.bind(null, wine?.id ?? null), undefined);
   const formRef = useRef<HTMLFormElement>(null);
@@ -91,12 +104,13 @@ export function WineForm({ wine, catalogSize = 0, barcodeEnabled = false }: { wi
     return formAction(formData);
   }
 
-  const v = (k: keyof Wine) => (wine?.[k] ?? "") as string | number;
+  const v = (k: keyof Wine) => ((wine ?? initial)?.[k] ?? "") as string | number;
 
   return (
     <form ref={formRef} action={submit} className="grid gap-5 lg:grid-cols-[280px_1fr]">
       <input type="hidden" name="barcode" value={barcode} />
       <input type="hidden" name="pairings" value={pairings.join(",")} />
+      {wishlistId && <input type="hidden" name="wishlistId" value={wishlistId} />}
       {!wine && catalogSize > 0 && (
         <div className="lg:col-span-2">
           <QuickFill catalogSize={catalogSize} barcodeEnabled={barcodeEnabled} onFill={fill} />
@@ -170,7 +184,7 @@ export function WineForm({ wine, catalogSize = 0, barcodeEnabled = false }: { wi
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {WINE_COLOR_ORDER.map((color) => (
                 <label key={color} className="cursor-pointer">
-                  <input type="radio" name="color" value={color} defaultChecked={(wine?.color ?? "red") === color} className="peer sr-only" />
+                  <input type="radio" name="color" value={color} defaultChecked={(wine?.color ?? initial?.color ?? "red") === color} className="peer sr-only" />
                   <span className="flex min-h-11 items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm peer-checked:border-accent peer-checked:bg-accent-soft peer-checked:font-semibold peer-focus-visible:ring-2 peer-focus-visible:ring-accent/40">
                     <span className="size-4 shrink-0 rounded-full border border-black/10" style={{ background: WINE_COLOR_STYLES[color].fill }} />
                     {t(`colors.${color}`)}

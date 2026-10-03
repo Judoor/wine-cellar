@@ -8,7 +8,10 @@ import { requireUser } from "@/lib/auth";
 import { windowStatus } from "@/lib/drinking-window";
 import { formatMoney } from "@/lib/format";
 import { wineLocations } from "@/lib/services/cellar";
+import { listTastingNotes, ratingSummary } from "@/lib/services/tasting";
 import { getWine } from "@/lib/services/wines";
+import { Stars } from "@/components/stars";
+import { TastingSection } from "./tasting";
 import { slotLabel } from "@/lib/slots";
 import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { getLocale, getT } from "@/i18n/server";
@@ -23,6 +26,9 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const status = windowStatus(wine);
   const places = wineLocations(user.id, wine.id);
+  const rating = ratingSummary(user.id, wine.id);
+  const notes = listTastingNotes(user.id, wine.id).map((n) => ({ ...n, date: n.date.toISOString() }));
+  const autoOpenNote = (await props.searchParams).note === "1";
   const money = (n: number | null) => (n == null ? null : formatMoney(n, user.currency, locale));
 
   const details: [string, React.ReactNode][] = [
@@ -89,6 +95,14 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
               {wine.name && <em className="block text-primary">{wine.name}</em>}
             </h1>
             <p className="mt-1 font-serif text-2xl text-muted">{wine.vintage ?? t("wines.nonVintage")}</p>
+            {rating.average != null && (
+              <a href="#tasting" className="mt-2 inline-flex items-center gap-2 text-sm text-muted hover:text-foreground">
+                <Stars value={rating.average} />
+                {rating.count === 1
+                  ? t("tasting.averageOne", { rating: rating.average.toFixed(1) })
+                  : t("tasting.average", { rating: rating.average.toFixed(1), count: rating.count })}
+              </a>
+            )}
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href={`/wines/${wine.id}/edit`} className={buttonClass("secondary")}>
                 <Pencil className="size-4" aria-hidden /> {t("common.edit")}
@@ -126,6 +140,8 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
             )}
             {wine.notes && <p className="mt-4 whitespace-pre-line text-sm leading-relaxed">{wine.notes}</p>}
           </Card>
+
+          <TastingSection key={autoOpenNote ? "open" : "closed"} wineId={wine.id} notes={notes} autoOpen={autoOpenNote} />
 
           <Card>
             <SectionTitle>{t("wines.history")}</SectionTitle>

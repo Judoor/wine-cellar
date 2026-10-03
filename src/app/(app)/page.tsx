@@ -1,4 +1,7 @@
-import { Plus } from "lucide-react";
+import { BellRing, Plus } from "lucide-react";
+import { Stars } from "@/components/stars";
+import { urgentCount } from "@/lib/queries/drink";
+import { recentTastingNotes } from "@/lib/services/tasting";
 import Link from "next/link";
 import { GlassShelf } from "@/components/glass";
 import { buttonClass, Card, PageTitle, Pill, SectionTitle } from "@/components/ui";
@@ -12,6 +15,8 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const d = getDashboard(user.id);
+  const urgent = urgentCount(user.id);
+  const recent = recentTastingNotes(user.id);
   const date = new Date().toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
 
   const colors = WINE_COLOR_ORDER.map((color) => ({
@@ -39,6 +44,20 @@ export default async function DashboardPage() {
       >
         {t("dashboard.title")} <em className="text-primary">{t("dashboard.titleEm")}</em>
       </PageTitle>
+
+      {urgent > 0 && (
+        <Link
+          href="/drink"
+          className="mb-4 flex items-center gap-3 rounded-md border border-[#d9863a]/40 bg-[#fbe5cf] px-4 py-3 text-[#9a4d12] transition-colors hover:border-[#d9863a] md:mb-5"
+        >
+          <BellRing className="size-5 shrink-0" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{urgent === 1 ? t("drink.urgentAlertOne") : t("drink.urgentAlert", { count: urgent })}</span>
+            <span className="block text-sm opacity-80">{t("drink.urgentAlertText")}</span>
+          </span>
+          <span className="hidden text-sm font-semibold sm:inline">{t("drink.seeList")} →</span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <Stat label={t("dashboard.bottles")} value={d.bottles} />
@@ -95,6 +114,30 @@ export default async function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {recent.length > 0 && (
+        <Card className="mt-4 md:mt-5">
+          <SectionTitle>{t("tasting.recent")}</SectionTitle>
+          <ul className="grid gap-x-6 sm:grid-cols-2">
+            {recent.map((n) => (
+              <li key={n.id} className="border-b border-dashed border-border py-3 last:border-0 sm:[&:nth-last-child(2)]:border-0">
+                <Link href={`/wines/${n.wineId}#tasting`} className="block">
+                  <div className="flex items-center gap-2">
+                    <span className="size-3 shrink-0 rounded-full" style={{ background: WINE_COLOR_STYLES[n.color].fill }} />
+                    <span className="truncate text-sm font-semibold">
+                      {n.producer} {n.vintage}
+                    </span>
+                    {n.rating != null && <Stars value={n.rating} className="ml-auto shrink-0" />}
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted">
+                    {n.date.toLocaleDateString(locale)} {n.notes && `· ${n.notes}`}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { requireUser } from "@/lib/auth";
+import { urgentCount } from "@/lib/queries/drink";
 import { getT } from "@/i18n/server";
 import { logout } from "../(auth)/actions";
 import { MobileNav, SidebarNav } from "./nav";
@@ -9,6 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const t = await getT();
   const isAdmin = user.role === "admin";
+  const badges = { "/drink": urgentCount(user.id) };
 
   return (
     <div className="min-h-screen md:flex">
@@ -16,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="mb-8 px-3 pt-2 text-[#fff3dc]">
           <Logo name={t("app.name")} />
         </div>
-        <SidebarNav isAdmin={isAdmin} />
+        <SidebarNav isAdmin={isAdmin} badges={badges} />
         <div className="mt-auto border-t border-white/10 pt-4">
           <p className="truncate px-3 text-sm font-medium text-[#fff3dc]">{user.name}</p>
           <p className="mb-2 truncate px-3 text-xs opacity-70">{user.email}</p>
@@ -44,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-28 md:px-10 md:py-10">{children}</div>
       </main>
 
-      <MobileNav isAdmin={isAdmin} />
+      <MobileNav isAdmin={isAdmin} badges={badges} />
     </div>
   );
 }

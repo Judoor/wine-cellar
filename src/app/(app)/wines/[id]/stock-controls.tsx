@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { Minus, Plus, Trash } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useActionState, useState, useTransition } from "react";
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import type { MovementReason } from "@/lib/db/schema";
@@ -38,9 +39,14 @@ export function StockControls({ wineId, stock }: { wineId: string; stock: number
 function MoveForm({ wineId, direction, max, onDone }: { wineId: string; direction: "in" | "out"; max: number; onDone: () => void }) {
   const { t } = useI18n();
   const [quantity, setQuantity] = useState(1);
+  const router = useRouter();
   const [state, action, pending] = useActionState(async (prev: Awaited<ReturnType<typeof moveBottles>>, fd: FormData) => {
     const result = await moveBottles(wineId, direction, prev, fd);
-    if (result?.ok) onDone();
+    if (result?.ok) {
+      onDone();
+      // Just drank it: invite to write a tasting note.
+      if (direction === "out" && fd.get("reason") === "drunk") router.push(`/wines/${wineId}?note=1#tasting`);
+    }
     return result;
   }, undefined);
   const today = new Date().toISOString().slice(0, 10);

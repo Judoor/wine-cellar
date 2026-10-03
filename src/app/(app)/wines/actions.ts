@@ -15,6 +15,8 @@ import {
   updateWine,
   wineInputSchema,
 } from "@/lib/services/wines";
+import { addTastingNote, deleteTastingNote, tastingInputSchema, updateTastingNote } from "@/lib/services/tasting";
+import { deleteWishlistItem } from "@/lib/services/wishlist";
 import type { MessageKey } from "@/i18n/config";
 
 export type WineFormState = { error?: MessageKey; fieldErrors?: Record<string, MessageKey> } | undefined;
@@ -43,6 +45,9 @@ export async function saveWine(wineId: string | null, _: WineFormState, formData
   } else {
     const quantity = Math.max(0, Math.min(500, Number(formData.get("quantity")) || 0));
     wineId = createWine(user.id, parsed.data, quantity, newImage).id;
+    // Created from a wishlist entry ("Bought it"): the wish is fulfilled.
+    const wishlistId = formData.get("wishlistId");
+    if (typeof wishlistId === "string" && wishlistId) deleteWishlistItem(user.id, wishlistId);
   }
 
   revalidatePath("/", "layout");
@@ -54,6 +59,34 @@ export async function removeWine(wineId: string) {
   await deleteWine(user.id, wineId);
   revalidatePath("/", "layout");
   redirect("/wines");
+}
+
+/* ---------- Tasting notes ---------- */
+
+export type TastingState = { error?: MessageKey; ok?: boolean } | undefined;
+
+export async function saveTastingNote(wineId: string, noteId: string | null, _: TastingState, formData: FormData): Promise<TastingState> {
+  const user = await requireUser();
+  const parsed = tastingInputSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "wines.invalidForm" };
+  if (noteId) updateTastingNote(user.id, noteId, parsed.data);
+  else if (!addTastingNote(user.id, wineId, parsed.data)) return { error: "common.unexpectedError" };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeTastingNote(noteId: string) {
+  const user = await requireUser();
+  deleteTastingNote(user.id, noteId);
+  revalidatePath("/", "layout");
+}
+
+/** Takes one bottle out as "drunk" (unplaced bottles first). */
+export async function drinkOne(wineId: string) {
+  const user = await requireUser();
+  const result = removeBottles(user.id, wineId, { quantity: 1, reason: "drunk", date: new Date(), note: null });
+  revalidatePath("/", "layout");
+  return result.ok;
 }
 
 export type MoveState = { error?: MessageKey; ok?: boolean } | undefined;

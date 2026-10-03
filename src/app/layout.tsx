@@ -19,6 +19,7 @@ const dmSerif = DM_Serif_Display({
 export const metadata: Metadata = {
   title: "Wine Cellar",
   description: "Self-hosted wine cellar management",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 
 export const viewport: Viewport = {

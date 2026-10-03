@@ -33,8 +33,9 @@ COPY --from=builder --chown=node:node /app/catalog ./catalog
 COPY --from=builder --chown=node:node /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 COPY --chown=node:node docker/start.js ./start.js
 
-# The Next.js cache must be writable by whichever user runs the server (PUID or compose `user:`).
-RUN mkdir -p /data /app/.next/cache && chown node:node /data && chmod 777 /app/.next/cache
+# Next.js writes caches under .next (cache/, server/route-cache…): make it writable by whichever
+# user runs the server (PUID/PGID or compose `user:`).
+RUN mkdir -p /data /app/.next/cache && chown node:node /data && chmod -R a+rwX /app/.next
 VOLUME /data
 EXPOSE 3000
 

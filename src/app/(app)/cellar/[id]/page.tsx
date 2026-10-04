@@ -24,7 +24,7 @@ export default async function LocationPage(props: PageProps<"/cellar/[id]">) {
       </Link>
       <PageTitle
         subtitle={location.description ?? t("cellar.capacity", { bottles: location.bottles.length, capacity })}
-        actions={<LocationActions location={location} />}
+        menu={<LocationActions location={location} />}
       >
         {location.name}
       </PageTitle>

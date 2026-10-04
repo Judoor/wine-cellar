@@ -13,7 +13,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import clsx from "clsx";
-import { ArrowRightLeft, ExternalLink, GlassWater, LogOut, X } from "lucide-react";
+import { ArrowRightLeft, ExternalLink, GlassWater, LogOut, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button, Card } from "@/components/ui";
@@ -24,7 +24,7 @@ import { rowLabel, rowWidth, slotLabel } from "@/lib/slots";
 import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { useI18n } from "@/i18n/client";
 import { drinkBottle, place, unplace } from "../actions";
-import { RackHeader, RackForm } from "./rack-controls";
+import { RackHeader, RackMenu, RackModal } from "./rack-controls";
 
 type Unplaced = { wineId: string; producer: string; name: string | null; vintage: number | null; color: WineColor; bottleSizeMl: number; count: number };
 type Target = { rackId: string; row: number; col: number };
@@ -48,6 +48,7 @@ export function CellarBoard({
   const { t, locale } = useI18n();
   const [mode, setMode] = useState<Mode>({ kind: "idle" });
   const [dragging, setDragging] = useState<{ color: WineColor } | null>(null);
+  const [addingRack, setAddingRack] = useState(false);
   const [, startTransition] = useTransition();
 
   const [state, applyOptimistic] = useOptimistic({ bottles, unplaced }, (s, a: OptimisticAction) => {
@@ -153,50 +154,62 @@ export function CellarBoard({
         </div>
       )}
 
-      <div className="grid select-none grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div
+        className={clsx(
+          "grid select-none grid-cols-[minmax(0,1fr)] gap-5",
+          state.unplaced.length > 0 && "lg:grid-cols-[minmax(0,1fr)_300px]",
+        )}
+      >
         <div className="min-w-0 space-y-5">
-          {racks.length === 0 && <Card className="py-10 text-center text-sm text-muted">{t("cellar.noRacks")}</Card>}
+          {racks.length === 0 && (
+            <Card className="flex flex-col items-center gap-4 py-10 text-center">
+              <p className="max-w-sm text-sm text-muted">{t("cellar.noRacks")}</p>
+              <Button onClick={() => setAddingRack(true)}>
+                <Plus className="size-4" aria-hidden /> {t("cellar.newRack")}
+              </Button>
+            </Card>
+          )}
           {racks.map((rack) => (
             <Card key={rack.id} className="p-4">
-              <RackHeader locationId={locationId} rack={rack} filled={state.bottles.filter((b) => b.rackId === rack.id).length} />
-              <RackGrid
-                rack={rack}
-                bottles={state.bottles.filter((b) => b.rackId === rack.id)}
-                selectedId={selectedId}
-                highlightEmpty={mode.kind === "placing" || mode.kind === "moving" || dragging !== null}
-                onSlotClick={onSlotClick}
-              />
+              <RackHeader rack={rack} filled={state.bottles.filter((b) => b.rackId === rack.id).length} />
+              <div className="flex items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <RackGrid
+                    rack={rack}
+                    bottles={state.bottles.filter((b) => b.rackId === rack.id)}
+                    selectedId={selectedId}
+                    highlightEmpty={mode.kind === "placing" || mode.kind === "moving" || dragging !== null}
+                    onSlotClick={onSlotClick}
+                  />
+                </div>
+                <RackMenu locationId={locationId} rack={rack} />
+              </div>
             </Card>
           ))}
-          <Card>
-            <h2 className="mb-4 font-serif text-2xl">{t("cellar.newRack")}</h2>
-            <RackForm locationId={locationId} />
-          </Card>
         </div>
 
-        <div className="order-first space-y-4 lg:order-none">
-          <Card className="lg:sticky lg:top-4">
-            <h2 className="font-serif text-2xl">{t("cellar.unplaced")}</h2>
-            {state.unplaced.length === 0 ? (
-              <p className="mt-2 text-sm text-muted">{t("cellar.unplacedEmpty")}</p>
-            ) : (
-              <>
-                <p className="mt-1 mb-3 text-sm text-muted">{t("cellar.unplacedHint")}</p>
-                <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:flex-col lg:overflow-visible">
-                  {state.unplaced.map((w) => (
-                    <UnplacedItem
-                      key={w.wineId}
-                      wine={w}
-                      active={mode.kind === "placing" && mode.wine.wineId === w.wineId}
-                      onClick={() => setMode(mode.kind === "placing" && mode.wine.wineId === w.wineId ? { kind: "idle" } : { kind: "placing", wine: w })}
-                    />
-                  ))}
-                </ul>
-              </>
-            )}
-          </Card>
-        </div>
+        {/* Only shown when some bottles are still waiting for a slot. */}
+        {state.unplaced.length > 0 && (
+          <div className="order-first space-y-4 lg:order-none">
+            <Card className="lg:sticky lg:top-4">
+              <h2 className="font-serif text-2xl">{t("cellar.unplaced")}</h2>
+              <p className="mt-1 mb-3 text-sm text-muted">{t("cellar.unplacedHint")}</p>
+              <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:flex-col lg:overflow-visible">
+                {state.unplaced.map((w) => (
+                  <UnplacedItem
+                    key={w.wineId}
+                    wine={w}
+                    active={mode.kind === "placing" && mode.wine.wineId === w.wineId}
+                    onClick={() => setMode(mode.kind === "placing" && mode.wine.wineId === w.wineId ? { kind: "idle" } : { kind: "placing", wine: w })}
+                  />
+                ))}
+              </ul>
+            </Card>
+          </div>
+        )}
       </div>
+
+      {addingRack && <RackModal locationId={locationId} onClose={() => setAddingRack(false)} />}
 
       {mode.kind === "selected" && (
         <BottleSheet

@@ -1,7 +1,7 @@
-import { ArrowDownLeft, ArrowLeft, ArrowUpRight, Pencil } from "lucide-react";
+import { ArrowDownLeft, ArrowLeft, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { buttonClass, Card, Pill, SectionTitle } from "@/components/ui";
+import { Card, Pill, SectionTitle } from "@/components/ui";
 import { parsePairings } from "@/lib/pairings";
 import { WindowBadge } from "@/components/window-badge";
 import { requireUser } from "@/lib/auth";
@@ -15,7 +15,8 @@ import { TastingSection } from "./tasting";
 import { slotLabel } from "@/lib/slots";
 import { WINE_COLOR_STYLES } from "@/lib/wine-colors";
 import { getLocale, getT } from "@/i18n/server";
-import { DeleteWineButton, StockControls } from "./stock-controls";
+import { StockControls } from "./stock-controls";
+import { WineMenu } from "./wine-menu";
 import { WindowTimeline } from "./window-timeline";
 
 export default async function WinePage(props: PageProps<"/wines/[id]">) {
@@ -90,10 +91,13 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
               <span className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{wine.appellation ?? wine.region}</span>
               <WindowBadge status={status} label={t(`window.${status}`)} />
             </div>
-            <h1 className="font-serif text-4xl leading-tight md:text-5xl">
-              {wine.producer}
-              {wine.name && <em className="block text-primary">{wine.name}</em>}
-            </h1>
+            <div className="flex items-start gap-3">
+              <h1 className="min-w-0 flex-1 font-serif text-4xl leading-tight md:text-5xl">
+                {wine.producer}
+                {wine.name && <em className="block text-primary">{wine.name}</em>}
+              </h1>
+              <WineMenu wineId={wine.id} />
+            </div>
             <p className="mt-1 font-serif text-2xl text-muted">{wine.vintage ?? t("wines.nonVintage")}</p>
             {rating.average != null && (
               <a href="#tasting" className="mt-2 inline-flex items-center gap-2 text-sm text-muted hover:text-foreground">
@@ -103,12 +107,6 @@ export default async function WinePage(props: PageProps<"/wines/[id]">) {
                   : t("tasting.average", { rating: rating.average.toFixed(1), count: rating.count })}
               </a>
             )}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href={`/wines/${wine.id}/edit`} className={buttonClass("secondary")}>
-                <Pencil className="size-4" aria-hidden /> {t("common.edit")}
-              </Link>
-              <DeleteWineButton wineId={wine.id} />
-            </div>
           </div>
 
           <Card>

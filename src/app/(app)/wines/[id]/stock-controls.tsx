@@ -1,13 +1,13 @@
 "use client";
 
 import clsx from "clsx";
-import { Minus, Plus, Trash } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import type { MovementReason } from "@/lib/db/schema";
 import { useI18n } from "@/i18n/client";
-import { moveBottles, removeWine } from "../actions";
+import { moveBottles } from "../actions";
 import { Stepper } from "../wine-form";
 
 const REASONS: Record<"in" | "out", MovementReason[]> = {
@@ -78,22 +78,5 @@ function MoveForm({ wineId, direction, max, onDone }: { wineId: string; directio
         {t("common.save")}
       </Button>
     </form>
-  );
-}
-
-export function DeleteWineButton({ wineId }: { wineId: string }) {
-  const { t } = useI18n();
-  const [pending, startTransition] = useTransition();
-  return (
-    <Button
-      variant="ghost"
-      disabled={pending}
-      className="text-danger"
-      onClick={() => {
-        if (confirm(t("wines.deleteConfirm"))) startTransition(() => removeWine(wineId));
-      }}
-    >
-      <Trash className="size-4" aria-hidden /> {t("common.delete")}
-    </Button>
   );
 }

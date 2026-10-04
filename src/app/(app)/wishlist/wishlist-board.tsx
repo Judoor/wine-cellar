@@ -1,11 +1,12 @@
 "use client";
 
-import { Heart, MapPin, Pencil, Plus, ShoppingBag, Trash } from "lucide-react";
+import { Heart, MapPin, Pencil, ShoppingBag, Trash } from "lucide-react";
+import { ActionMenu, AddButton, Modal } from "@/components/menu";
 import { PhotoPicker } from "@/components/photo-picker";
 import Link from "next/link";
 import { useActionState, useRef, useState, useTransition } from "react";
 import { Stars, StarInput } from "@/components/stars";
-import { Alert, Button, buttonClass, Card, Field, Input, Select, Textarea } from "@/components/ui";
+import { Alert, Button, buttonClass, Card, Field, Input, PageTitle, Select, Textarea } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { WineColor } from "@/lib/db/schema";
 import { formatMoney } from "@/lib/format";
@@ -49,48 +50,50 @@ export function WishlistBoard({
   const [filter, setFilter] = useState<Filter>("all");
   const [pending, startTransition] = useTransition();
   const shown = items.filter((i) => filter === "all" || (filter === "tasted") === isTasted(i));
+  const editedItem = items.find((i) => i.id === editing);
 
   return (
-    <div className="space-y-4">
-      {editing === "new" ? (
-        <WishlistForm catalogSize={catalogSize} barcodeEnabled={barcodeEnabled} onDone={() => setEditing(null)} />
-      ) : (
-        <Button onClick={() => setEditing("new")}>
-          <Plus className="size-4" aria-hidden /> {t("wishlist.add")}
-        </Button>
+    <>
+      <PageTitle subtitle={t("wishlist.subtitle")} menu={<AddButton label={t("wishlist.add")} onClick={() => setEditing("new")} />}>
+        {t("wishlist.title")}
+      </PageTitle>
+
+      {editing && (editing === "new" || editedItem) && (
+        <Modal title={editedItem ? t("wishlist.edit") : t("wishlist.add")} onClose={() => setEditing(null)}>
+          <WishlistForm
+            item={editedItem}
+            catalogSize={editedItem ? 0 : catalogSize}
+            barcodeEnabled={editedItem ? false : barcodeEnabled}
+            onDone={() => setEditing(null)}
+          />
+        </Modal>
       )}
 
-      {items.length > 0 && (
-        <div className="flex rounded border border-border bg-surface p-1 text-sm sm:w-fit">
-          {(["all", "tasted", "toBuy"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              aria-pressed={filter === f}
-              onClick={() => setFilter(f)}
-              className={cn("flex-1 rounded px-3 py-1.5 font-medium", filter === f ? "bg-oak text-oak-foreground" : "text-muted hover:text-foreground")}
-            >
-              {t(f === "all" ? "wishlist.filterAll" : f === "tasted" ? "wishlist.filterTasted" : "wishlist.filterToBuy")}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {items.length === 0 && editing !== "new" && (
-        <Card className="flex flex-col items-center gap-3 py-14 text-center">
-          <Heart className="size-10 text-muted" aria-hidden />
-          <h2 className="font-serif text-2xl">{t("wishlist.empty")}</h2>
-          <p className="max-w-sm text-sm text-muted">{t("wishlist.emptyText")}</p>
-        </Card>
-      )}
-
-      <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-2">
-        {shown.map((item) =>
-          editing === item.id ? (
-            <li key={item.id} className="lg:col-span-2">
-              <WishlistForm item={item} catalogSize={0} barcodeEnabled={false} onDone={() => setEditing(null)} />
-            </li>
-          ) : (
+      <div className="space-y-4">
+        {items.length > 0 && (
+          <div className="flex rounded border border-border bg-surface p-1 text-sm sm:w-fit">
+            {(["all", "tasted", "toBuy"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={filter === f}
+                onClick={() => setFilter(f)}
+                className={cn("flex-1 rounded px-3 py-1.5 font-medium", filter === f ? "bg-oak text-oak-foreground" : "text-muted hover:text-foreground")}
+              >
+                {t(f === "all" ? "wishlist.filterAll" : f === "tasted" ? "wishlist.filterTasted" : "wishlist.filterToBuy")}
+              </button>
+            ))}
+          </div>
+        )}
+        {items.length === 0 && (
+          <Card className="flex flex-col items-center gap-3 py-14 text-center">
+            <Heart className="size-10 text-muted" aria-hidden />
+            <h2 className="font-serif text-2xl">{t("wishlist.empty")}</h2>
+            <p className="max-w-sm text-sm text-muted">{t("wishlist.emptyText")}</p>
+          </Card>
+        )}
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-2">
+          {shown.map((item) => (
             <li key={item.id} id={`wish-${item.id}`} className="scroll-mt-20">
               <Card className="flex h-full flex-col gap-3 p-4">
                 <div className="flex items-start gap-3">
@@ -130,24 +133,28 @@ export function WishlistBoard({
                     <ShoppingBag className="size-4" aria-hidden /> {t("wishlist.bought")}
                   </Link>
                   {item.barcode && <span className="hidden font-mono text-xs text-muted sm:inline">{item.barcode}</span>}
-                  <button onClick={() => setEditing(item.id)} aria-label={t("common.edit")} className="ml-auto rounded p-2 text-muted hover:bg-surface-2">
-                    <Pencil className="size-4" />
-                  </button>
-                  <button
-                    disabled={pending}
-                    onClick={() => confirm(t("wishlist.deleteConfirm")) && startTransition(() => removeWishlistItem(item.id))}
-                    aria-label={t("common.delete")}
-                    className="rounded p-2 text-muted hover:bg-surface-2 hover:text-danger"
-                  >
-                    <Trash className="size-4" />
-                  </button>
+                  <ActionMenu
+                    up
+                    label={t("wishlist.menu")}
+                    className="-mr-2 ml-auto"
+                    items={[
+                      { label: t("common.edit"), icon: Pencil, onSelect: () => setEditing(item.id) },
+                      {
+                        label: t("common.delete"),
+                        icon: Trash,
+                        danger: true,
+                        disabled: pending,
+                        onSelect: () => confirm(t("wishlist.deleteConfirm")) && startTransition(() => removeWishlistItem(item.id)),
+                      },
+                    ]}
+                  />
                 </div>
               </Card>
             </li>
-          ),
-        )}
-      </ul>
-    </div>
+          ))}
+        </ul>
+      </div>
+    </>
   );
 }
 
@@ -191,7 +198,7 @@ function WishlistForm({
     return action(fd);
   }
   return (
-    <Card>
+    <>
       {catalogSize > 0 && (
         <div className="mb-4">
           <QuickFill catalogSize={catalogSize} barcodeEnabled={barcodeEnabled} onFill={fill} />
@@ -270,6 +277,6 @@ function WishlistForm({
           </Button>
         </div>
       </form>
-    </Card>
+    </>
   );
 }

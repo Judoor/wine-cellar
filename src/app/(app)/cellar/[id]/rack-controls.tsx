@@ -3,61 +3,70 @@
 import clsx from "clsx";
 import { Pencil, Trash } from "lucide-react";
 import { useActionState, useState, useTransition } from "react";
+import { ActionMenu, Modal } from "@/components/menu";
 import { Alert, Button, Field, Input } from "@/components/ui";
 import type { Rack } from "@/lib/db/schema";
 import { rackCapacity } from "@/lib/slots";
 import { useI18n } from "@/i18n/client";
 import { removeRack, saveRack } from "../actions";
 
-export function RackHeader({ locationId, rack, filled }: { locationId: string; rack: Rack; filled: number }) {
-  const { t } = useI18n();
-  const [editing, setEditing] = useState(false);
-  const [pending, startTransition] = useTransition();
-  const shape = rack.layout === "pyramid" ? t("cellar.pyramidSummary", { base: rack.cols, rows: rack.rows }) : `${rack.rows} × ${rack.cols}`;
+export function RackHeader({ rack, filled }: { rack: Rack; filled: number }) {
   return (
-    <div className="mb-3">
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate font-serif text-xl">{rack.name}</h2>
-          <p className="text-xs text-muted">
-            {shape} · {filled}/{rackCapacity(rack)}
-          </p>
-        </div>
-        <button onClick={() => setEditing(!editing)} aria-label={t("cellar.editRack")} className="rounded p-2 text-muted hover:bg-surface-2">
-          <Pencil className="size-4" />
-        </button>
-        <button
-          disabled={pending}
-          onClick={() => {
-            if (confirm(t("cellar.deleteRackConfirm"))) startTransition(() => removeRack(locationId, rack.id));
-          }}
-          aria-label={t("common.delete")}
-          className="rounded p-2 text-muted hover:bg-surface-2 hover:text-danger"
-        >
-          <Trash className="size-4" />
-        </button>
-      </div>
-      {editing && (
-        <div className="mt-3 rounded border border-dashed border-border p-3">
-          <RackForm locationId={locationId} rack={rack} onDone={() => setEditing(false)} />
-        </div>
-      )}
+    <div className="mb-3 min-w-0">
+      <h2 className="truncate font-serif text-xl">{rack.name}</h2>
+      <p className="text-xs text-muted">
+        {filled}/{rackCapacity(rack)}
+      </p>
     </div>
   );
 }
 
-export function RackForm({ locationId, rack, onDone }: { locationId: string; rack?: Rack; onDone?: () => void }) {
+/** ⋮ menu of a rack card: edit (in a modal) or delete. */
+export function RackMenu({ locationId, rack }: { locationId: string; rack: Rack }) {
   const { t } = useI18n();
-  const [formKey, setFormKey] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [pending, startTransition] = useTransition();
+  return (
+    <>
+      <ActionMenu
+        up
+        label={t("cellar.rackMenu")}
+        items={[
+          { label: t("common.edit"), icon: Pencil, onSelect: () => setEditing(true) },
+          {
+            label: t("common.delete"),
+            icon: Trash,
+            danger: true,
+            disabled: pending,
+            onSelect: () => {
+              if (confirm(t("cellar.deleteRackConfirm"))) startTransition(() => removeRack(locationId, rack.id));
+            },
+          },
+        ]}
+      />
+      {editing && <RackModal locationId={locationId} rack={rack} onClose={() => setEditing(false)} />}
+    </>
+  );
+}
+
+/** Rack creation or edition form, in a modal. */
+export function RackModal({ locationId, rack, onClose }: { locationId: string; rack?: Rack; onClose: () => void }) {
+  const { t } = useI18n();
+  return (
+    <Modal title={rack ? t("cellar.editRack") : t("cellar.newRack")} onClose={onClose}>
+      <RackForm locationId={locationId} rack={rack} onDone={onClose} />
+    </Modal>
+  );
+}
+
+function RackForm({ locationId, rack, onDone }: { locationId: string; rack?: Rack; onDone: () => void }) {
+  const { t } = useI18n();
   const [layout, setLayout] = useState<"grid" | "pyramid">(rack?.layout ?? "grid");
   const [rows, setRows] = useState(rack?.rows ?? (layout === "pyramid" ? 3 : 4));
   const [cols, setCols] = useState(rack?.cols ?? 6);
   const [state, action, pending] = useActionState(async (prev: Awaited<ReturnType<typeof saveRack>>, fd: FormData) => {
     const result = await saveRack(locationId, rack?.id ?? null, prev, fd);
-    if (result?.ok) {
-      onDone?.();
-      if (!rack) setFormKey((k) => k + 1); // reset the creation form
-    }
+    if (result?.ok) onDone();
     return result;
   }, undefined);
   const id = rack?.id ?? "new";
@@ -65,7 +74,7 @@ export function RackForm({ locationId, rack, onDone }: { locationId: string; rac
   const valid = !pyramid || rows <= cols;
 
   return (
-    <form key={formKey} action={action} className="space-y-3">
+    <form action={action} className="space-y-4">
       <input type="hidden" name="layout" value={layout} />
       <div>
         <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{t("cellar.layout")}</p>
@@ -85,8 +94,8 @@ export function RackForm({ locationId, rack, onDone }: { locationId: string; rac
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_7rem_7rem_auto] sm:items-end">
-        <div className="col-span-2 sm:col-span-1">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
           <Field label={t("cellar.rackName")} htmlFor={`rack-name-${id}`}>
             <Input id={`rack-name-${id}`} name="name" defaultValue={rack?.name} placeholder={t("cellar.rackNamePlaceholder")} required />
           </Field>
@@ -118,9 +127,6 @@ export function RackForm({ locationId, rack, onDone }: { locationId: string; rac
             required
           />
         </Field>
-        <Button type="submit" disabled={pending || !valid} className="col-span-2 sm:col-span-1">
-          {rack ? t("common.save") : t("common.add")}
-        </Button>
       </div>
 
       <p className={clsx("text-sm", valid ? "text-muted" : "text-danger")}>
@@ -131,6 +137,9 @@ export function RackForm({ locationId, rack, onDone }: { locationId: string; rac
               .join(" ")}
       </p>
       {state?.error && <Alert>{t(state.error)}</Alert>}
+      <Button type="submit" disabled={pending || !valid} className="w-full">
+        {rack ? t("common.save") : t("common.add")}
+      </Button>
     </form>
   );
 }

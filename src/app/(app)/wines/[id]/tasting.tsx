@@ -1,7 +1,8 @@
 "use client";
 
-import { Pencil, Plus, Trash, Users } from "lucide-react";
+import { Pencil, Trash, Users } from "lucide-react";
 import { useActionState, useState, useTransition } from "react";
+import { ActionMenu, AddButton, Modal } from "@/components/menu";
 import { Stars, StarInput } from "@/components/stars";
 import { Alert, Button, Card, Field, Input, SectionTitle, Textarea } from "@/components/ui";
 import { useI18n } from "@/i18n/client";
@@ -21,58 +22,57 @@ export function TastingSection({ wineId, notes, autoOpen }: { wineId: string; no
   const [editing, setEditing] = useState<string | "new" | null>(autoOpen ? "new" : null);
   const [pending, startTransition] = useTransition();
 
+  const editedNote = notes.find((n) => n.id === editing);
+
   return (
     <Card id="tasting" className="scroll-mt-20">
       <div className="mb-3 flex items-center justify-between gap-3">
         <SectionTitle className="mb-0">{t("tasting.title")}</SectionTitle>
-        {editing !== "new" && (
-          <Button variant="secondary" onClick={() => setEditing("new")} className="shrink-0">
-            <Plus className="size-4" aria-hidden /> <span className="hidden sm:inline">{t("tasting.add")}</span>
-          </Button>
-        )}
+        <AddButton label={t("tasting.add")} onClick={() => setEditing("new")} className="-mr-2" />
       </div>
 
-      {editing === "new" && <TastingForm wineId={wineId} onDone={() => setEditing(null)} />}
+      {editing && (editing === "new" || editedNote) && (
+        <Modal title={editedNote ? t("tasting.edit") : t("tasting.add")} onClose={() => setEditing(null)}>
+          <TastingForm wineId={wineId} note={editedNote} onDone={() => setEditing(null)} />
+        </Modal>
+      )}
 
-      {notes.length === 0 && editing !== "new" && <p className="text-sm text-muted">{t("tasting.empty")}</p>}
+      {notes.length === 0 && <p className="text-sm text-muted">{t("tasting.empty")}</p>}
 
       <ul className="divide-y divide-dashed divide-border">
-        {notes.map((n) =>
-          editing === n.id ? (
-            <li key={n.id} className="py-3">
-              <TastingForm wineId={wineId} note={n} onDone={() => setEditing(null)} />
-            </li>
-          ) : (
-            <li key={n.id} className="py-3">
-              <div className="flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {n.rating != null && <Stars value={n.rating} />}
-                    <span className="text-sm text-muted">{new Date(n.date).toLocaleDateString(locale, { dateStyle: "long" })}</span>
-                    {n.occasion && <span className="text-sm font-medium">· {n.occasion}</span>}
-                  </div>
-                  {n.notes && <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed">{n.notes}</p>}
-                  {n.companions && (
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                      <Users className="size-3.5" aria-hidden /> {n.companions}
-                    </p>
-                  )}
+        {notes.map((n) => (
+          <li key={n.id} className="py-3">
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {n.rating != null && <Stars value={n.rating} />}
+                  <span className="text-sm text-muted">{new Date(n.date).toLocaleDateString(locale, { dateStyle: "long" })}</span>
+                  {n.occasion && <span className="text-sm font-medium">· {n.occasion}</span>}
                 </div>
-                <button onClick={() => setEditing(n.id)} aria-label={t("common.edit")} className="rounded p-2 text-muted hover:bg-surface-2">
-                  <Pencil className="size-4" />
-                </button>
-                <button
-                  disabled={pending}
-                  onClick={() => confirm(t("tasting.deleteConfirm")) && startTransition(() => removeTastingNote(n.id))}
-                  aria-label={t("common.delete")}
-                  className="rounded p-2 text-muted hover:bg-surface-2 hover:text-danger"
-                >
-                  <Trash className="size-4" />
-                </button>
+                {n.notes && <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed">{n.notes}</p>}
+                {n.companions && (
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+                    <Users className="size-3.5" aria-hidden /> {n.companions}
+                  </p>
+                )}
               </div>
-            </li>
-          ),
-        )}
+              <ActionMenu
+                label={t("tasting.menu")}
+                className="-mt-2 -mr-2"
+                items={[
+                  { label: t("common.edit"), icon: Pencil, onSelect: () => setEditing(n.id) },
+                  {
+                    label: t("common.delete"),
+                    icon: Trash,
+                    danger: true,
+                    disabled: pending,
+                    onSelect: () => confirm(t("tasting.deleteConfirm")) && startTransition(() => removeTastingNote(n.id)),
+                  },
+                ]}
+              />
+            </div>
+          </li>
+        ))}
       </ul>
     </Card>
   );
@@ -89,7 +89,7 @@ function TastingForm({ wineId, note, onDone }: { wineId: string; note?: TastingN
   const id = note?.id ?? "new";
 
   return (
-    <form action={action} className="mb-4 space-y-4 rounded border border-dashed border-border p-4">
+    <form action={action} className="space-y-4">
       <div>
         <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted">{t("tasting.rating")}</p>
         <StarInput name="rating" defaultValue={note?.rating} label={t("tasting.rating")} clearLabel={t("tasting.noRating")} />

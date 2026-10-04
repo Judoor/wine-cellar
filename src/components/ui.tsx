@@ -81,18 +81,24 @@ export function PageTitle({
   kicker,
   subtitle,
   actions,
+  menu,
 }: {
   children: React.ReactNode;
   kicker?: React.ReactNode;
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Compact icon actions (⋮ menu, + button) pinned to the right of the title. */
+  menu?: React.ReactNode;
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4 md:mb-8">
-      <div className="min-w-0">
-        {kicker && <Kicker>{kicker}</Kicker>}
-        <h1 className="font-serif text-4xl leading-[1.05] md:text-5xl">{children}</h1>
-        {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <div className="min-w-0 flex-1">
+          {kicker && <Kicker>{kicker}</Kicker>}
+          <h1 className="font-serif text-4xl leading-[1.05] md:text-5xl">{children}</h1>
+          {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
+        </div>
+        {menu && <div className="-mr-2 flex shrink-0 items-center md:mt-1">{menu}</div>}
       </div>
       {actions && <div className="w-full sm:w-auto [&>*]:w-full sm:[&>*]:w-auto">{actions}</div>}
     </div>
